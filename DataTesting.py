@@ -1,44 +1,65 @@
-import json 
+import json
+import numpy as np
 import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import ast
-
-def process_file(file_path):
-    data = []
-    with open(file_path, 'r') as f:
-        for line in f:
-            json_object = json.loads(line)
-            data.append(json_object["x"])
-    return data
-
-data_list = []
-for root, dirs, files in os.walk('2018'):
-    for file in files:
-        if file.endswith('.jsonl'):
-            file_path = os.path.join(root, file)
-            data = process_file(file_path)
-            data_list.append(data)
 
 
-# Load the CSV file into a DataFrame
-df = pd.read_csv('my_data.csv')
+#Open a JSONL file and average the x, y, and z by accelaraiton
+def normalizeAccel():
+    # Open the JSONL file
+    with open('data/2018/02/day=27/hour=17/00.jsonl', 'r') as file:
+        lines = file.readlines()
 
-# Define a function to parse strings into lists
-def parse_list(s):
-    if pd.isna(s):
-        return []
-    else:
-        return ast.literal_eval(s)
+    # Process each line
+    for i, line in enumerate(lines):
+        data = json.loads(line)
 
-# Apply the function to each element in the DataFrame
-df = df.applymap(parse_list)
+        # Normalize each array
+        for axis in ['x', 'y', 'z']:
+            arr = np.array(data[axis])
+            avg = np.average(arr)
+            data[axis] = (arr / avg).tolist()
 
-df = df.applymap(pd.Series)
+        # Write the updated JSON object back to the file
+        lines[i] = json.dumps(data)
 
-# Plot the first two series
-df.iloc[0].plot(label='Period 1')
-df.iloc[1].plot(label='Period 2')
-# Add more lines as needed
-plt.legend()
-plt.show()
+    # Write the updated lines back to the file
+    with open('data/2018/02/day=27/hour=17/05.jsonl', 'w') as file:
+        file.write('\n'.join(lines))
+
+# Function to process a JSONL file
+def greaterAccel(filename):
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+    for line in lines:
+        data = json.loads(line)
+        if any(x > 5 for x in data['x']):
+            print(filename)
+            return
+def findAccel():
+    # Get a list of all files in the directory
+    files = os.listdir('data')
+
+    # Process each JSONL file
+    for dirpath, dirnames, filenames in os.walk('data'):
+        # Process each JSONL file
+        for filename in filenames:
+            if filename.endswith('.jsonl'):
+                greaterAccel(os.path.join(dirpath, filename))
+
+# Open the JSONL file
+with open('data/2018/02/day=16/hour=23/40.jsonl', 'r') as file:
+    lines = file.readlines()
+
+# Initialize the maximum value
+max_value = float('-inf')
+
+# Process each line
+for line in lines:
+    data = json.loads(line)
+
+    # Update the maximum value
+    for axis in ['x', 'y', 'z']:
+        max_value = max(max_value, max(data[axis]))
+
+print(f'The maximum value in any x, y, or z array is: {max_value}')

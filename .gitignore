@@ -9,6 +9,7 @@ __pycache__/
 #Ignore the downloaded eew data
 data/
 my_data.csv
+devices.jsonl
 
 # Distribution / packaging
 .Python
