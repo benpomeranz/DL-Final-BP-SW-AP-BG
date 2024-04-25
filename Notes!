@@ -12,3 +12,5 @@ aws s3 ls --no-sign-request s3://grillo-openeew/
 
 aws s3 cp --no-sign-request s3://grillo-openeew/records/country_code=mx/device_id=001/year=2018/month=02 ./data --recursive
 ^^^ Example
+
+COOL FACT: Max accel in feb 2018 is an earthquake listed on USGS right on the same location
