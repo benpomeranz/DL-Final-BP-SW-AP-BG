@@ -34,32 +34,41 @@ def greaterAccel(filename):
     for line in lines:
         data = json.loads(line)
         if any(x > 5 for x in data['x']):
-            print(filename)
+            maxAccelInFile(filename)
             return
 def findAccel():
     # Get a list of all files in the directory
-    files = os.listdir('data')
-
     # Process each JSONL file
+    high_accels = []
+    highest_accel = 0
+    highest_file = ""
     for dirpath, dirnames, filenames in os.walk('data'):
         # Process each JSONL file
         for filename in filenames:
             if filename.endswith('.jsonl'):
-                greaterAccel(os.path.join(dirpath, filename))
+               maxInFile = maxAccelInFile(os.path.join(dirpath, filename))
+               if maxInFile>highest_accel:
+                   highest_accel = maxInFile
+                   highest_file = os.path.join(dirpath, filename)
+               high_accels.append(maxInFile)
+               
+    return highest_accel, highest_file
 
-# Open the JSONL file
-with open('data/2018/02/day=16/hour=23/40.jsonl', 'r') as file:
-    lines = file.readlines()
+def maxAccelInFile(filename: str):
+    # Open the JSONL file
+    with open(filename, 'r') as file:
+        lines = file.readlines()
 
-# Initialize the maximum value
-max_value = float('-inf')
+    # Initialize the maximum value
+    max_value = float('-inf')
 
-# Process each line
-for line in lines:
-    data = json.loads(line)
+    # Process each line
+    for line in lines:
+        data = json.loads(line)
 
-    # Update the maximum value
-    for axis in ['x', 'y', 'z']:
-        max_value = max(max_value, max(data[axis]))
+        # Update the maximum value
+        for axis in ['x', 'y', 'z']:
+            max_value = max(max_value, max(data[axis]))
+    return max_value
 
-print(f'The maximum value in any x, y, or z array is: {max_value}')
+print(findAccel())

@@ -9,3 +9,6 @@ aws s3 ls --no-sign-request s3://grillo-openeew/
 
  aws s3 cp --no-sign-request s3://<bucket-name>/<path-to-data> <local-destination> --recursive
  ^^^ This is how you try to download all files in a directory and subdirectory, where local-destination is where you want to send it to
+
+aws s3 cp --no-sign-request s3://grillo-openeew/records/country_code=mx/device_id=001/year=2018/month=02 ./data --recursive
+^^^ Example
