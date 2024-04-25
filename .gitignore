@@ -6,7 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+#Ignore the downloaded eew data
 data/
+my_data.csv
+devices.jsonl
 
 # Distribution / packaging
 .Python
