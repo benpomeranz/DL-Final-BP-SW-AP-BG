@@ -91,7 +91,8 @@ def dataWithAccel(path:str, accel:float):
                         with open(f"over{str(accel)}.jsonl", 'a') as output_file:
                             output_file.write(line)
 
-#SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS
+#SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS: take in a single accelaration value, 
+# get a single richter value
 def accel_to_rich_one(accel):
     g = accel / 980.665
     mercalli_split = [.000464, .00175, .00297, .0276, .062, .115, .215, .401, .747, 1.39]
