@@ -47,7 +47,7 @@ def findAccel():
         for filename in filenames:
             if filename.endswith('.jsonl'):
                maxInFile = maxAccelInFile(os.path.join(dirpath, filename))
-               if maxInFile>highest_accel:
+               if maxInFile>highest_accel and maxInFile!=201.342:
                    highest_accel = maxInFile
                    highest_file = os.path.join(dirpath, filename)
                high_accels.append(maxInFile)
@@ -71,4 +71,26 @@ def maxAccelInFile(filename: str):
             max_value = max(max_value, max(data[axis]))
     return max_value
 
-print(findAccel())
+def addTotalAccelerationInfo(pathname:str):
+    # Get a list of all files in the directory
+    for dirpath, dirnames, filenames in os.walk(pathname):
+        # Process each JSONL file
+        for filename in filenames:
+            if filename.endswith('.jsonl'):
+                filepath = os.path.join(dirpath, filename)
+                with open(filepath, 'r') as file:
+                    lines = file.readlines()
+                # Process each line
+                for i, line in enumerate(lines):
+                    data = json.loads(line)
+                    # Calculate total acceleration
+                    total_acceleration = np.sqrt((np.square(data['x'])) + (np.square(data['y'])) + (np.square(data['z']))).tolist()
+                    # Add total acceleration info to the JSON object
+                    data['total_acceleration'] = total_acceleration
+                    # Write the updated JSON object back to the file
+                    lines[i] = json.dumps(data)
+                # Write the updated lines back to the file
+                with open(filepath, 'w') as file:
+                    file.write('\n'.join(lines))
+
+addTotalAccelerationInfo('data')
