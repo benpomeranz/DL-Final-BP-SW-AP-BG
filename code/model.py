@@ -26,7 +26,7 @@ class Recurrent(tf.keras.Model):
     def __init__(self, input_magnitude: bool = True, # to use magnitude as input
                  predict_magnitude: bool = False, # output distribution, NOT magnitude
                  context_size: int = 32, # hidden state size
-                 num_components: int = 32,
+                 num_components: int = 32, # WHAT SHOULD THIS BE ????? I THOUGHT 3 ???
                  rnn_type: str = "GRU",
                  dropout_proba: float = 0.5,
                  tau_mean: float = 1.0, # mean inter-event times in data
@@ -56,28 +56,23 @@ class Recurrent(tf.keras.Model):
         self.learning_rate = learning_rate
 
         # Create decoder
-
-
-        # 
-        # Decoder for the time distribution
         self.num_time_params = 3 * self.num_components
-        self.hypernet_time = nn.Linear(context_size, self.num_time_params)
+        # input should be of hidden state size
+        self.hypernet_time = Dense(self.num_time_params)
 
-        # RNN input features
-        if self.input_magnitude:
-            # Decoder for magnitude
-            self.num_mag_params = 1  # (1 rate)
-            self.hypernet_mag = nn.Linear(context_size, self.num_mag_params)
+        #RNN input features
+        if self.input_magnitude: #if using magnitude as input
+            self.num_mag_params = 1 # (1 rate)
+            # input should be of hidden state size
+            self.hypernet_mag = Dense(self.num_mag_params)
 
-        if rnn_type not in ["RNN", "GRU"]:
-            raise ValueError(
-                f"rnn_type must be one of ['RNN', 'GRU'] " f"(got {rnn_type})"
-            )
-        self.num_rnn_inputs = (
-            1  # inter-event times
-            + int(self.input_magnitude)  # magnitude features
-            + 0 if self.num_extra_features is None else self.num_extra_features
-        )
+        # create rnn inputs
+        self.num_rnn_inputs = (1 + int(self.input_magnitude)) # CHANGE IF num_extra_features EXISTS
+
+        # create rnn
+        self.rnn 
+
+
 
         self.rnn = getattr(nn, rnn_type)(
             self.num_rnn_inputs, context_size, batch_first=True
@@ -85,6 +80,16 @@ class Recurrent(tf.keras.Model):
         self.dropout = nn.Dropout(dropout_proba)
 
         
+
+
+
+
+
+
+
+
+
+
     def __init__(self, context_size: int):
         super(Recurrent, self).__init__()
         self.rnn = tf.keras.layers.SimpleRNN(context_size, return_sequences=True)
