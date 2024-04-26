@@ -91,6 +91,6 @@ def addTotalAccelerationInfo(pathname:str):
                     lines[i] = json.dumps(data)
                 # Write the updated lines back to the file
                 with open(filepath, 'w') as file:
-                    file.write('\n'.join(lines))
+                    file.write('\n'.join(lines))    
 
 addTotalAccelerationInfo('data')
