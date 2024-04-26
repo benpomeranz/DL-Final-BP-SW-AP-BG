@@ -34,7 +34,7 @@ class Recurrent(tf.keras.Model):
                  mag_mean: float = 0.0, # mean earthquake magnitude in data
                  richter_b: float = 1.0, # fixed b value of Gutenberg-Richter distribution
                  mag_completeness: float = 2.0, # magnitude completeness
-                 learning_rate: float = 5e-2,):
+                 learning_rate: float = 5e-2):
         
         # initialize model
         super().__init__()
@@ -53,11 +53,17 @@ class Recurrent(tf.keras.Model):
         self.richter_b = tf.constant(richter_b, dtype=tf.float32)
         self.mag_completeness = tf.constant(mag_completeness, dtype=tf.float32)
         
+        
+
         # set learning rate
         self.learning_rate = learning_rate
 
         # RNN input features
-        self.num_mag_params = 1  # (1 rate)
+        self.num_mag_params = 1 + int(self.input_magnitude) # (1 rate)
+
+
+        
+        
         # take in size of 
         self.hypernet_mag = tf.keras.layers.Dense(self.num_mag_params)
         nn.Linear(context_size, self.num_mag_params)
