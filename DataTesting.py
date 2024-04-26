@@ -3,28 +3,6 @@ import numpy as np
 import os
 
 
-#Open a JSONL file and average the x, y, and z by accelaraiton
-def normalizeAccel():
-    # Open the JSONL file
-    with open('data/2018/02/day=27/hour=17/00.jsonl', 'r') as file:
-        lines = file.readlines()
-
-    # Process each line
-    for i, line in enumerate(lines):
-        data = json.loads(line)
-
-        # Normalize each array
-        for axis in ['x', 'y', 'z']:
-            arr = np.array(data[axis])
-            avg = np.average(arr)
-            data[axis] = (arr / avg).tolist()
-
-        # Write the updated JSON object back to the file
-        lines[i] = json.dumps(data)
-
-    # Write the updated lines back to the file
-    with open('data/2018/02/day=27/hour=17/05.jsonl', 'w') as file:
-        file.write('\n'.join(lines))
 
 # Function to process a JSONL file
 def greaterAccel(filename):
@@ -113,6 +91,34 @@ def dataWithAccel(path:str, accel:float):
                         with open(f"over{str(accel)}.jsonl", 'a') as output_file:
                             output_file.write(line)
 
-def
+#SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS
+def accel_to_rich_one(accel):
+    g = accel / 980.665
+    mercalli_split = [.000464, .00175, .00297, .0276, .062, .115, .215, .401, .747, 1.39]
+    ratios = g / next((mval for mval in mercalli_split if g < mval), mercalli_split[-1])
+    mercalli_id = np.digitize(g, mercalli_split) + 1
+    mercalli_richter = {1:1, 2:3, 3:3.5, 4:4, 5:4.5, 6:5, 7:5.5, 8:6, 9:6.5, 10:7, 11:7.5, 12:8}
+    richter_val = mercalli_richter[mercalli_id]
+    richter_val += ratios
+    # print(richter_vals)
+    return richter_val
 
-dataWithAccel("data", 1.7)
+#Take a jsonl file, and for each line create data of the following format:
+#data[0]=richter, data[1]=accelaration matrix where the first row is the x accel, second row the y, 
+#and third row the z, data[2] = cloud_t-1514782800 (seconds since start of 2018)
+def jsonl_to_data(filename):
+    data = []
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+    for line in lines:
+        json_data = json.loads(line)
+        print(np.array(json_data["total_acceleration"]).max())
+        richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
+        accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
+        cloud_t = json_data['cloud_t']-1514782800 #seconds since 2018
+        data.append([richter, accel_matrix, cloud_t])
+    return data
+
+data = jsonl_to_data("over1.7.jsonl")
+print(data)
+
