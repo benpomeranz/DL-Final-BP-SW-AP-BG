@@ -105,8 +105,8 @@ def accel_to_rich_one(accel):
     return richter_val
 
 #Take a jsonl file, and for each line create data of the following format:
-#data[0]=richter, data[1]=accelaration matrix where the first row is the x accel, second row the y, 
-#and third row the z, data[2] = cloud_t-1514782800 (seconds since start of 2018)
+#data[0]=richter, data[2]=accelaration matrix where the first row is the x accel, second row the y, 
+#and third row the z, data[1] = cloud_t-1514782800 (seconds since start of 2018)
 def jsonl_to_data(filename):
     data = []
     with open(f"{filename}.jsonl", 'r') as file:
@@ -117,7 +117,7 @@ def jsonl_to_data(filename):
         richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
         accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
         cloud_t = json_data['cloud_t']-1514782800 #seconds since 2018
-        data.append([richter, accel_matrix, cloud_t])
+        data.append([cloud_t, richter, accel_matrix])
     return data
 
 #takes in a JSONL filename WIHTOUT suffix, sorts by "cloud_t" value
@@ -185,5 +185,11 @@ def full_preprocess(path:str, output:str, accel:float):
     return jsonl_to_data(output)
 
 
-full_preprocess("data_2018", "processed_2018_2", 1.7)
+# full_preprocess("data_2018", "processed_2018_2", 1.7)
+
+with open("processed_2018_2.jsonl", 'r') as file:
+    lines = file.readlines()
+    for line in lines:
+        data = json.loads(line)
+        print(len(data['total_acceleration']))
 
