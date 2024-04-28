@@ -119,6 +119,20 @@ def jsonl_to_data(filename):
         data.append([richter, accel_matrix, cloud_t])
     return data
 
+def delete_within_x(filepath:str, num_mins:int):
+    with open(filepath, 'r') as file:
+        lines = file.readlines()
+    # Process each line
+    prev_time = json.loads(lines[0])['cloud_t']
+    for line in lines:
+        data = json.loads(line)
+        curr_time = data['cloud_t']
+        # Check if curr_time and prev_time are separated by num_mins minutes
+        if curr_time - prev_time > (num_mins*60):
+            # Write the line to a new JSONL file in the root directory
+            with open(f"delete_within_{str(num_mins)}.jsonl", 'a') as output_file:
+                output_file.write(line)
+
 data = jsonl_to_data("over1.7.jsonl")
 print(data)
 
