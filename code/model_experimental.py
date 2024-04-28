@@ -53,22 +53,59 @@ class Recurrent(tf.keras.Model):
         self.richter_b = tf.constant(richter_b, dtype=tf.float32)
         self.mag_completeness = tf.constant(mag_completeness, dtype=tf.float32)
         
-        
-
         # set learning rate
         self.learning_rate = learning_rate
 
         # RNN input features
         self.num_mag_params = 1 + int(self.input_magnitude) # (1 rate)
+        self.hypernet_time = tf.keras.layers.Dense(self.num_mag_params) # MIGHT NOT NEED --> used for time distribution
 
 
+        # RNN defining
+        self.num_rnn_inputs = (
+            1  # inter-event times
+            + int(self.input_magnitude)  # magnitude features
+        )
+
+        # input size is num_rnn_inputs
+        self.rnn = tf.keras.layers.GRU(units=hidden_size, return_sequences=True)
+        # dropout
+        self.dropout = tf.keras.layers.Dropout(dropout_proba)
+
+    # call function
+    def call(self, inputs, training=False):
+
+        features = []
+        # encode time (CHECK THIS! WE DONT KNOW INPUTS FORMAT)
+        log_tau = tf.math.log(tf.clip_by_value(inputs['inter_times'], 1e-10, tf.float32.max))
+        features.append(log_tau - self.log_tau_mean)
         
+        # encoding magnitude
+        if self.input_magnitude:
+            mag_encoded = inputs['magnitudes'][:, :, tf.newaxis] - self.mag_mean
+            features.append(mag_encoded)
+
+        # Concatenate all features
+        features = tf.concat(features, axis=-1)
+
+        # RNN layer
+        rnn_output = self.rnn(features, training=training)
+
+        # Dropout layer
+        context = self.dropout(rnn_output, training=training)
+
+        # Time distribution parameters
+        time_params = self.hypernet_time(context)
+        # TODO: Split time_params and create a mixture distribution
+
+        # If predicting magnitude
+        if self.predict_magnitude:
+            mag_params = self.hypernet_mag(context)
+            # TODO: Create magnitude distribution
         
-        # take in size of 
-        self.hypernet_mag = tf.keras.layers.Dense(self.num_mag_params)
-        nn.Linear(context_size, self.num_mag_params)
-
-
-        # define layers
-        self.gru = tf.keras.layers.GRU(units=hidden_size, return_sequences=True)
-        self.feed_forward = tf.keras.layers.Dense(3 * num_components)
+        # Outputs as dictionary for now
+        outputs = {
+            'time_params': time_params,
+            # 'magnitude_params': mag_params,  # Uncomment if magnitude is predicted
+        }
+        return outputs
