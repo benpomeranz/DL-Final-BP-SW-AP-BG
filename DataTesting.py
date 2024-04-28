@@ -169,9 +169,13 @@ def add_total_and_select(path:str, output:str, accel:float):
                     data['total_acceleration'] = total_acceleration
                     # Check if 'total_acceleration' contains a value greater than 5
                     if any(x > accel for x in data['total_acceleration']):
+                        # Add the total acceleration array to the JSON object
+                        data['total_acceleration'] = data['total_acceleration']
+                        # Write the updated JSON object back to the file
+                        line = json.dumps(data)
                         # Write the line to a new JSONL file in the root directory
                         with open(f"{output}.jsonl", 'a') as output_file:
-                            output_file.write(line)
+                            output_file.write(f"{line}\n")
 
 
 def full_preprocess(path:str, output:str, accel:float):
@@ -181,5 +185,5 @@ def full_preprocess(path:str, output:str, accel:float):
     return jsonl_to_data(output)
 
 
-print(full_preprocess("data", "test_3", 3))
+full_preprocess("data_2018", "processed_2018_2", 1.7)
 

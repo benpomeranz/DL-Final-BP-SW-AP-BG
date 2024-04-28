@@ -8,6 +8,7 @@ __pycache__/
 
 #Ignore the downloaded eew data
 data/
+data_2018/
 my_data.csv
 devices.jsonl
 
