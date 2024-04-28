@@ -1,7 +1,7 @@
 import json
 import numpy as np
 import os
-
+import math
 
 
 # Function to process a JSONL file
@@ -106,18 +106,35 @@ def accel_to_rich_one(accel):
 
 #Take a jsonl file, and for each line create data of the following format:
 #data[0]=richter, data[2]=accelaration matrix where the first row is the x accel, second row the y, 
-#and third row the z, data[1] = cloud_t-1514782800 (seconds since start of 2018)
+#and third row the z, data[1] = log(t_i-t_{i-1})-(log_avg interval time) (seconds since start of 2018)
 def jsonl_to_data(filename):
     data = []
+    time_intervals = []
+    total_accels = []
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
-    for line in lines:
-        json_data = json.loads(line)
-        print(np.array(json_data["total_acceleration"]).max())
-        richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
-        accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
-        cloud_t = json_data['cloud_t']-1514782800 #seconds since 2018
-        data.append([cloud_t, richter, accel_matrix])
+    for i in range(1, len(lines) - 1):
+        line2 = lines[i]
+        line1 = lines[i - 1]
+        # Process the pair of lines
+        json_data_2 = json.loads(line2)
+        json_data_1= json.loads(line1)
+        inter_time = json_data_2['cloud_t']-json_data_1['cloud_t']
+        time_intervals.append(inter_time)
+        total_accels.append(np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']]))
+    log_avg_interval = math.log(sum(time_intervals) / len(time_intervals))
+    average_accel = np.mean(total_accels, axis=0)
+    for i in range(1, len(lines) - 1):
+        line2 = lines[i]
+        line1 = lines[i - 1]
+        json_data_2 = json.loads(line2)
+        json_data_1= json.loads(line1)
+        t = math.log(json_data_2['cloud_t']-json_data_1['cloud_t']) - log_avg_interval
+        print(np.array(json_data_2["total_acceleration"]).max())
+        richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
+        accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
+        print("=====================", (accel_matrix-total_accels).shape, "===========================")
+        data.append([t, richter, accel_matrix - total_accels])
     return data
 
 #takes in a JSONL filename WIHTOUT suffix, sorts by "cloud_t" value
@@ -187,9 +204,10 @@ def full_preprocess(path:str, output:str, accel:float):
 
 # full_preprocess("data_2018", "processed_2018_2", 1.7)
 
-with open("processed_2018_2.jsonl", 'r') as file:
-    lines = file.readlines()
-    for line in lines:
-        data = json.loads(line)
-        print(len(data['total_acceleration']))
+# with open("processed_2018_2.jsonl", 'r') as file:
+#     lines = file.readlines()
+#     for line in lines:
+#         data = json.loads(line)
+#         print(len(data['total_acceleration']))
 
+jsonl_to_data('processed_2018_2')
