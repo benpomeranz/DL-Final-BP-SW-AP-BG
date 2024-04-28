@@ -25,7 +25,7 @@ class Recurrent(tf.keras.Model):
         '''
     
     def __init__(self, input_magnitude: bool = True, # to use magnitude as input
-                 predict_magnitude: bool = False, # output distribution, NOT magnitude
+                 #predict_magnitude: bool = False, # output distribution, NOT magnitude
                  hidden_size: int = 32, # hidden state size
                  num_components: int = 32, # WHAT SHOULD THIS BE ????? I THOUGHT 3 ???
                  rnn_type: str = "GRU", # REMOVE??
@@ -41,7 +41,7 @@ class Recurrent(tf.keras.Model):
 
         # set parameters
         self.input_magnitude = input_magnitude
-        self.predict_magnitude = predict_magnitude
+        #self.predict_magnitude = predict_magnitude
         # self.num_extra_features = num_extra_features ---> REMOVED- do we need this?
         self.hidden_size = hidden_size
         self.num_components = num_components
@@ -59,8 +59,8 @@ class Recurrent(tf.keras.Model):
         # RNN input features
         self.num_mag_params = 1 + int(self.input_magnitude) # (1 rate)
         self.hypernet_time = tf.keras.layers.Dense(self.num_mag_params) # MIGHT NOT NEED --> used for time distribution
-
-
+        self.hypernet_mag = tf.keras.layers.Dense(self.num_mag_params) # MIGHT NOT NEED --> used for magnitude distribution
+        
         # RNN defining
         self.num_rnn_inputs = (
             1  # inter-event times
@@ -73,36 +73,37 @@ class Recurrent(tf.keras.Model):
         self.dropout = tf.keras.layers.Dropout(dropout_proba)
 
     # call function
-    def call(self, inputs, training=False):
+    def call(self, magnitudes, times, accels, has_accel=True, training=False):
+        '''
+            inputs: 
+                magnitudes: array containing the magnitudes of events
+                times: array containing the times of events
+                accels: array containing the accelerations of events
+                has_accel: boolean indicating if the acceleration is being used
+        '''
 
         features = []
-        # encode time (CHECK THIS! WE DONT KNOW INPUTS FORMAT)
-        log_tau = tf.math.log(tf.clip_by_value(inputs['inter_times'], 1e-10, tf.float32.max))
-        features.append(log_tau - self.log_tau_mean)
-        
-        # encoding magnitude
-        if self.input_magnitude:
-            mag_encoded = inputs['magnitudes'][:, :, tf.newaxis] - self.mag_mean
-            features.append(mag_encoded)
+        # add magntiudes and times to features
+        features.append(times)
+        features.append(magnitudes)
 
-        # Concatenate all features
+        # if training on acceleration data *** decide if we also want to only use mag or accel here!
+        if has_accel:
+            features.append(accels)
+
+        # concatenate all features
         features = tf.concat(features, axis=-1)
 
-        # RNN layer
+        # pass features into RNN
         rnn_output = self.rnn(features, training=training)
 
-        # Dropout layer
+        # dropout layer for overfit prevention
         context = self.dropout(rnn_output, training=training)
 
         # Time distribution parameters
         time_params = self.hypernet_time(context)
         # TODO: Split time_params and create a mixture distribution
 
-        # If predicting magnitude
-        if self.predict_magnitude:
-            mag_params = self.hypernet_mag(context)
-            # TODO: Create magnitude distribution
-        
         # Outputs as dictionary for now
         outputs = {
             'time_params': time_params,
