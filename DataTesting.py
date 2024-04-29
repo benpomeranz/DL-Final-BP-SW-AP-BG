@@ -133,8 +133,8 @@ def jsonl_to_data(filename):
         print(np.array(json_data_2["total_acceleration"]).max())
         richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
         accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
-        print("=====================", (accel_matrix-total_accels).shape, "===========================")
-        data.append([t, richter, accel_matrix - total_accels])
+        # print("=====================", (accel_matrix-average_accel).shape, "===========================")
+        data.append([t, richter, accel_matrix - average_accel])
     return data
 
 #takes in a JSONL filename WIHTOUT suffix, sorts by "cloud_t" value
@@ -210,4 +210,4 @@ def full_preprocess(path:str, output:str, accel:float):
 #         data = json.loads(line)
 #         print(len(data['total_acceleration']))
 
-jsonl_to_data('processed_2018_2')
+print(jsonl_to_data('processed_2018_2'))
