@@ -85,23 +85,28 @@ class Recurrent(tf.keras.Model):
         #call the rnn model on a batch of shape (sequence_length, 98) where each 98 is (time + magnitude + 96 accels), 
         # and get the weibull parameters of shape (sequence_length[-1?], 3*num components), and finally get 
         # distributions from those outputs for each event
-        def call(self, batch):
-            hidden_states = self.rnn(batch)
-            weibull_params = self.hypernet_time(hidden_states)
-            scale, shape, weight_logits = tf.split(
-            weibull_params,
-            [self.num_components, self.num_components, self.num_components],
-            dim=-1,
+    def call(self, batch):
+        hidden_states = self.rnn(batch)
+        weibull_params = self.hypernet_time(hidden_states)
+        scale, shape, weight_logits = tf.split(
+        weibull_params,
+        [self.num_components, self.num_components, self.num_components],
+        dim=-1,
+        )
+        scale = tf.math.softplus(scale.clamp_min(-5.0))
+        shape = tf.math.softplus(shape.clamp_min(-5.0))
+        weight_logits = tf.math.log_softmax(weight_logits, dim=-1)
+        component_dists = tfp.distributions.Weibull(shape, scale)
+        mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
+        return tfp.distributions.MixtureSameFamily(
+            mixture_distribution=mixture_dist,
+            component_distribution=component_dists,
             )
-            scale = tf.math.softplus(scale.clamp_min(-5.0))
-            shape = tf.math.softplus(shape.clamp_min(-5.0))
-            weight_logits = tf.math.log_softmax(weight_logits, dim=-1)
-            component_dists = tfp.distributions.Weibull(shape, scale)
-            mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
-            return tfp.distributions.MixtureSameFamily(
-                mixture_distribution=mixture_dist,
-                component_distribution=component_dists,
-                )
+        #THIS NEEDS TO BE MODIFIED TO ALSO HAVE SURVIVAL PROBABILITY OF LAST EVENT UNTIL END OF TIME PERIOD
+
+    # Our loss function, negative log likelihood
+    def nll():
+
 
 
 
