@@ -9,4 +9,6 @@ def  test_preprocess():
     for data in test_batch:
         print(data[0])
     #TODO: CHECK ON LOGS TO MAKE SURE THEY ARE CORRECT  - DONE!
+
+    
     
