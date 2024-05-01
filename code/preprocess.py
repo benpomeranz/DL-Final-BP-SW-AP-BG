@@ -3,64 +3,12 @@ import numpy as np
 import os
 import math
 
-def accel_to_g(accel):
-    return np.array(accel) / 980.665
-
-# converts accel values to richter magnitudes
-def accel_to_rich(accel):
-    g = accel_to_g(accel)
-    mercalli_split = [.000464, .00175, .00297, .0276, .062, .115, .215, .401, .747, 1.39]
-    ratios = [val / next((mval for mval in mercalli_split if val < mval), mercalli_split[-1]) for val in g]
-    mercalli_ids = np.digitize(g, mercalli_split) + 1
-    mercalli_richter = {1:1, 2:3, 3:3.5, 4:4, 5:4.5, 6:5, 7:5.5, 8:6, 9:6.5, 10:7, 11:7.5, 12:8}
-    richter_vals = np.array([mercalli_richter[id] for id in mercalli_ids]) + ratios
-    return richter_vals
-
-#Takes in file at pathname, takes sqrt of of squared x y and z accelarations at each timestep to get total ground accelaration
-def add_total_accelaration(pathname:str):
-    # Get a list of all files in the directory
-    for dirpath, dirnames, filenames in os.walk(pathname):
-        # Process each JSONL file
-        for filename in filenames:
-            if filename.endswith('.jsonl'):
-                filepath = os.path.join(dirpath, filename)
-                with open(filepath, 'r') as file:
-                    lines = file.readlines()
-                # Process each line
-                for i, line in enumerate(lines):
-                    data = json.loads(line)
-                    # Calculate total acceleration
-                    total_acceleration = np.sqrt((np.square(data['x'])) + (np.square(data['y'])) + (np.square(data['z']))).tolist()
-                    # Add total acceleration info to the JSON object
-                    data['total_acceleration'] = total_acceleration
-                    # Write the updated JSON object back to the file
-                    lines[i] = json.dumps(data)
-                # Write the updated lines back to the file
-                with open(filepath, 'w') as file:
-                    file.write('\n'.join(lines))
-
-#Take in a path, walk through all jsonl files in said path, and for each line if said line's 'total_accelaration'
-# list of values contains a value greater than accel, add that to a new jsonl file in the root directory
-def data_with_accel(path:str, accel:float):
-    # Get a list of all files in the directory
-    for dirpath, dirnames, filenames in os.walk(path):
-        # Process each JSONL file
-        for filename in filenames:
-            if filename.endswith('.jsonl'):
-                filepath = os.path.join(dirpath, filename)
-                with open(filepath, 'r') as file:
-                    lines = file.readlines()
-                # Process each line
-                for line in lines:
-                    data = json.loads(line)
-                    # Check if 'total_acceleration' contains a value greater than 5
-                    if any(x > accel for x in data['total_acceleration']):
-                        # Write the line to a new JSONL file in the root directory
-                        with open(f"over{str(accel)}.jsonl", 'a') as output_file:
-                            output_file.write(line)
 
 #SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS: take in a single accelaration value, 
 # get a single richter value
+'''
+NOTE: May want to change the ratio computation to more closely fit the log function 
+'''
 def accel_to_rich_one(accel):
     g = accel / 980.665
     mercalli_split = [.000464, .00175, .00297, .0276, .062, .115, .215, .401, .747, 1.39]
@@ -69,17 +17,18 @@ def accel_to_rich_one(accel):
     mercalli_richter = {1:1, 2:3, 3:3.5, 4:4, 5:4.5, 6:5, 7:5.5, 8:6, 9:6.5, 10:7, 11:7.5, 12:8}
     richter_val = mercalli_richter[mercalli_id]
     richter_val += ratios
-    # print(richter_vals)
     return richter_val
 
 #Take a jsonl file, and for each line create data of the following format:
-#data[0]=richter, data[2]=accelaration matrix where the first row is the x accel, second row the y, 
+#data[1]=richter - avg, data[2]=accelaration matrix where the first row is the x accel, second row the y, 
 #and third row the z, and where we are subtracting the average of all accelaration values
-#  data[1] = log(t_i-t_{i-1})-(log_avg interval time) (seconds since start of 2018)
+#  data[0] = log(t_i-t_{i-1})-(log_avg interval time)
 def jsonl_to_data(filename, start_time, end_time):
     data = []
     time_intervals = []
     total_accels = []
+    richters = []
+
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
 
@@ -92,16 +41,27 @@ def jsonl_to_data(filename, start_time, end_time):
         inter_time = json_data_2['cloud_t']-json_data_1['cloud_t']
         time_intervals.append(inter_time)
         total_accels.append(np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']]))
+        richters.append(accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max()))
     log_avg_interval = math.log(sum(time_intervals) / len(time_intervals))
     average_accel = np.mean(total_accels)
 
+    
     #Append first datapoint:
     line0 = lines[0]
     json_data = json.loads(line0)
     t = math.log(json_data['cloud_t']-start_time) - log_avg_interval
     richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
     accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
-    data.append([t-start_time, richter, accel_matrix - average_accel])
+    richters.append(richter)
+    richter_avg = np.average(richters)
+
+    times = []
+    richters = []
+    accels = []
+    times.append(t-start_time)
+    richters.append(richter-richter_avg)
+    accels.append(accel_matrix - average_accel)
+    # data.append([t-start_time, richter-richter_avg, accel_matrix - average_accel])
 
     #For rest iterate through getting interval times
     for i in range(1, len(lines)):
@@ -113,8 +73,13 @@ def jsonl_to_data(filename, start_time, end_time):
         # print(np.array(json_data_2["total_acceleration"]).max())
         richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
         accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
-        data.append([t, richter, accel_matrix - average_accel])
-    return data
+
+        times.append(t)
+        richters.append(richter-richter_avg)
+        accels.append(accel_matrix - average_accel)
+        # data.append([t, richter-richter_avg, accel_matrix - average_accel])
+    # return data
+    return times, richters, accels
 
 #takes in a JSONL filename WIHTOUT suffix, sorts by "cloud_t" value
 def sort_by_time(filename):
@@ -181,13 +146,4 @@ def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time
     delete_within_x(output, 100)
     return jsonl_to_data(output, start_time, end_time)
 
-
-# full_preprocess("data_2018", "processed_2018_2", 1.7)
-
-# with open("processed_2018_2.jsonl", 'r') as file:
-#     lines = file.readlines()
-#     for line in lines:
-#         data = json.loads(line)
-#         print(len(data['total_acceleration']))
-
-# print(full_preprocess("/Users/benpomeranz/Desktop/CS1470/DL-Final-BP-SW-AP-BG/test_preprocess_data.jsonl", "output", 1))
+print(jsonl_to_data('processed_2018_2'))
