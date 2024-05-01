@@ -1,5 +1,6 @@
 from preprocess import *
 from pytest import *
+import tensorflow as tf
 
 def  test_preprocess():
     test_batch = full_preprocess("Scrap/test_data", "test_output", 1.7, 0, 11000)
