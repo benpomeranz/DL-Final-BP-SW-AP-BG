@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Reshape, Concatenate
 from tensorflow.math import exp, sqrt, square
+import tensorflow_probability as tfp
 
 class Recurrent(tf.keras.Model):
 
@@ -26,13 +27,13 @@ class Recurrent(tf.keras.Model):
     def __init__(self, input_magnitude: bool = True, # to use magnitude as input
                  predict_magnitude: bool = False, # output distribution, NOT magnitude
                  context_size: int = 32, # hidden state size
-                 num_components: int = 32, # WHAT SHOULD THIS BE ????? I THOUGHT 3 ???
+                 num_components: int = 32, #Number of weibull distributions being mixed to form mixed dist
                  rnn_type: str = "GRU",
                  dropout_proba: float = 0.5,
-                 tau_mean: float = 1.0, # mean inter-event times in data
-                 mag_mean: float = 0.0, # mean earthquake magnitude in data
-                 richter_b: float = 1.0, # fixed b value of Gutenberg-Richter distribution
-                 mag_completeness: float = 2.0, # magnitude completeness
+                 tau_mean: float = 1.0, # mean inter-event times in data (We do not use bc preprocess does this)
+                 mag_mean: float = 0.0, # mean earthquake magnitude in data (see above)
+                 richter_b: float = 1.0, # fixed b value of Gutenberg-Richter distribution (don't use)
+                 mag_completeness: float = 2.0, # magnitude completeness (idk what that means)
                  learning_rate: float = 5e-2,):
         
         # initialize model
@@ -67,33 +68,59 @@ class Recurrent(tf.keras.Model):
             self.hypernet_mag = Dense(self.num_mag_params)
 
         # create rnn inputs
-        self.num_rnn_inputs = (1 + int(self.input_magnitude)) # CHANGE IF num_extra_features EXISTS
-
-        # create rnn
-        self.rnn 
-
-
-
-        self.rnn = getattr(nn, rnn_type)(
-            self.num_rnn_inputs, context_size, batch_first=True
-        )
-        self.dropout = nn.Dropout(dropout_proba)
+        self.num_rnn_inputs = 3 #3 generically, bc we have mag, accel, and time
 
         
 
+        # self.rnn = getattr(nn, rnn_type)(
+        #     self.num_rnn_inputs, context_size, batch_first=True
+        # )
+        self.dropout = nn.Dropout(dropout_proba)
+
+        # create rnn
+        self.rnn = tf.keras.layers.GRU(context_size, return_sequences=True)
+
+    
+
+        #call the rnn model on a batch of shape (sequence_length, 98) where each 98 is (time + magnitude + 96 accels), 
+        # and get the weibull parameters of shape (sequence_length[-1?], 3*num components), and finally get 
+        # distributions from those outputs for each event
+    def call(self, batch):
+        hidden_states = self.rnn(batch)
+        weibull_params = self.hypernet_time(hidden_states)
+        scale, shape, weight_logits = tf.split(
+        weibull_params,
+        [self.num_components, self.num_components, self.num_components],
+        dim=-1,
+        )
+        scale = tf.math.softplus(scale.clamp_min(-5.0))
+        shape = tf.math.softplus(shape.clamp_min(-5.0))
+        weight_logits = tf.math.log_softmax(weight_logits, dim=-1)
+        component_dists = tfp.distributions.Weibull(shape, scale)
+        mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
+        return tfp.distributions.MixtureSameFamily(
+            mixture_distribution=mixture_dist,
+            component_distribution=component_dists,
+            )
+        #THIS NEEDS TO BE MODIFIED TO ALSO HAVE SURVIVAL PROBABILITY OF LAST EVENT UNTIL END OF TIME PERIOD
+
+    # Our loss function, negative log likelihood
+    def nll():
 
 
 
 
 
 
+# ============================================================================================= #
 
 
 
-    def __init__(self, context_size: int):
-        super(Recurrent, self).__init__()
-        self.rnn = tf.keras.layers.SimpleRNN(context_size, return_sequences=True)
-        self.flatten = Flatten()
+
+    # def __init__(self, context_size: int):
+    #     super(Recurrent, self).__init__()
+    #     self.rnn = tf.keras.layers.SimpleRNN(context_size, return_sequences=True)
+    #     self.flatten = Flatten()
 
     '''
     neural TPP model with recurrent encoder
