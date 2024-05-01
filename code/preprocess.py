@@ -32,6 +32,9 @@ def jsonl_to_data(filename, start_time, end_time):
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
 
+    # Time interval between start_time and event1
+    time_intervals.append(json.loads(lines[0])['cloud_t'] - start_time)
+
     for i in range(1, len(lines)):
         line2 = lines[i]
         line1 = lines[i - 1]
@@ -42,9 +45,12 @@ def jsonl_to_data(filename, start_time, end_time):
         time_intervals.append(inter_time)
         total_accels.append(np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']]))
         richters.append(accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max()))
+
+    # Time interval between last event and end_time
+    time_intervals.append(end_time - json_data_2['cloud_t'])
+
     log_avg_interval = math.log(sum(time_intervals) / len(time_intervals))
     average_accel = np.mean(total_accels)
-
     
     #Append first datapoint:
     line0 = lines[0]
