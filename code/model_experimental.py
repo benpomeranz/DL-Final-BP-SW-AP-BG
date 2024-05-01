@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Reshape, Concatenate
@@ -22,7 +21,7 @@ class Recurrent(tf.keras.Model):
         richter_b: Fixed b value of the Gutenberg-Richter distribution for magnitudes.
         mag_completeness: Magnitude of completeness of the catalog.
         learning_rate: Learning rate used in optimization.
-        '''
+    '''
     
     def __init__(self, input_magnitude: bool = True, # to use magnitude as input
                  #predict_magnitude: bool = False, # output distribution, NOT magnitude
@@ -102,7 +101,7 @@ class Recurrent(tf.keras.Model):
 
         # Time distribution parameters
         time_params = self.hypernet_time(context)
-        
+
         # TODO: Split time_params and create a mixture distribution
         # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
         # time_params = tf.concat(time_params, axis=-1)
@@ -116,4 +115,23 @@ class Recurrent(tf.keras.Model):
             'time_params': time_params,
             # 'magnitude_params': mag_params,  # Uncomment if magnitude is predicted
         }
-        return outputs
+        #return outputs
+
+        hidden_states = self.rnn(batch)
+        weibull_params = self.hypernet_time(hidden_states)
+        scale, shape, weight_logits = tf.split(
+        weibull_params,
+        [self.num_components, self.num_components, self.num_components],
+        dim=-1,
+        )
+        scale = tf.math.softplus(scale.clamp_min(-5.0))
+        shape = tf.math.softplus(shape.clamp_min(-5.0))
+        weight_logits = tf.math.log_softmax(weight_logits, dim=-1)
+        component_dists = tfp.distributions.Weibull(shape, scale)
+        mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
+        return tfp.distributions.MixtureSameFamily(
+            mixture_distribution=mixture_dist,
+            component_distribution=component_dists,
+            )
+        #THIS NEEDS TO BE MODIFIED TO ALSO HAVE SURVIVAL PROBABILITY OF LAST EVENT UNTIL END OF TIME PERIOD
+

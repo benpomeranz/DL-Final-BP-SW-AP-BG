@@ -3,5 +3,5 @@ To do:
 2. Add testing for preprocessing
 3. Add batching and sequencing for preprocessed data + test shape
 3. Run model without loss on random input or even better real input
-4. Implement Loss
+4. Implement Loss - SKYLAR! check out tf_p.distributions
 5. Implement training!
