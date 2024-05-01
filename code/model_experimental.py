@@ -3,6 +3,9 @@ import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Reshape, Concatenate
 from tensorflow.math import exp, sqrt, square
+import numpy as np
+import tensorflow_probability as tfp
+
 
 class Recurrent(tf.keras.Model):
 
@@ -73,7 +76,7 @@ class Recurrent(tf.keras.Model):
         self.dropout = tf.keras.layers.Dropout(dropout_proba)
 
     # call function
-    def call(self, magnitudes, times, accels, has_accel=True, training=False):
+    def call(self, features, has_accel=True, training=False):
         '''
             inputs: 
                 magnitudes: array containing the magnitudes of events
@@ -82,17 +85,8 @@ class Recurrent(tf.keras.Model):
                 has_accel: boolean indicating if the acceleration is being used
         '''
 
-        features = []
-        # add magntiudes and times to features
-        features.append(times)
-        features.append(magnitudes)
-
-        # if training on acceleration data *** decide if we also want to only use mag or accel here!
-        if has_accel:
-            features.append(accels)
-
         # concatenate all features
-        features = tf.concat(features, axis=-1)
+        features = np.array(features)
 
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
@@ -101,7 +95,7 @@ class Recurrent(tf.keras.Model):
         context = self.dropout(rnn_output, training=training)
 
         # Time distribution parameters
-        time_params = self.hypernet_time(context)
+        weibull_params = self.hypernet_time(context)
         # TODO: Split time_params and create a mixture distribution
         # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
         # time_params = tf.concat(time_params, axis=-1)
@@ -109,10 +103,17 @@ class Recurrent(tf.keras.Model):
         # time_params = tf.nn.softmax(time_params, axis=-1)
         # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
         # time_params = [tf.squeeze(param, axis=-1) for param in time_params]
-
-        # Outputs as dictionary for now
-        outputs = {
-            'time_params': time_params,
-            # 'magnitude_params': mag_params,  # Uncomment if magnitude is predicted
-        }
-        return outputs
+        scale, shape, weight_logits = tf.split(
+        weibull_params,
+        [self.num_components, self.num_components, self.num_components],
+        dim=-1,
+        )
+        scale = tf.math.softplus(scale.clamp_min(-5.0))
+        shape = tf.math.softplus(shape.clamp_min(-5.0))
+        weight_logits = tf.math.log_softmax(weight_logits, dim=-1)
+        component_dists = tfp.distributions.Weibull(shape, scale)
+        mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
+        return tfp.distributions.MixtureSameFamily(
+            mixture_distribution=mixture_dist,
+            component_distribution=component_dists,
+            )
