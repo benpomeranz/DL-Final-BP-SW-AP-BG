@@ -122,10 +122,12 @@ class Recurrent(tf.keras.Model):
         weight_logits = tf.math.log_softmax(weight_logits, dim=-1)
         component_dists = tfp.distributions.Weibull(shape, scale)
         mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
+        
         return tfp.distributions.MixtureSameFamily(
             mixture_distribution=mixture_dist,
             component_distribution=component_dists,
             )
+    
         #THIS NEEDS TO BE MODIFIED TO ALSO HAVE SURVIVAL PROBABILITY OF LAST EVENT UNTIL END OF TIME PERIOD
 
         scale, shape, weight_logits = tf.split(
@@ -142,3 +144,85 @@ class Recurrent(tf.keras.Model):
             mixture_distribution=mixture_dist,
             component_distribution=component_dists,
             )
+    
+    def nll_loss(self, batch: eq.data.Batch) -> torch.Tensor:
+        """
+        Compute negative log-likelihood (NLL) for a batch of event sequences.
+
+        Args:
+            batch: Batch of padded event sequences.
+
+        Returns:
+            nll: NLL of each sequence, shape (batch_size,)
+        """
+        # output of the RNN
+        context = self.get_context(batch)  # (B, L, C)
+        
+        # calculate times between events
+        inter_time_dist = self.get_inter_time_dist(context)
+        # WHY DOES BATCH HAVE AN INTER_TIMES ATTTRIBUTE (??)
+        log_pdf = inter_time_dist.log_prob(batch.inter_times.clamp_min(1e-10))  # (B, L)
+        log_like = (log_pdf * batch.mask).sum(-1)
+
+        # Survival time from last event until t_end
+        arange = torch.arange(batch.batch_size)
+        # last item of the output sequence
+        last_surv_context = context[arange, batch.end_idx, :]
+        last_surv_dist = self.get_inter_time_dist(last_surv_context)
+        last_log_surv = last_surv_dist.log_survival(
+            batch.inter_times[arange, batch.end_idx]
+        )
+
+        # reshaping + updating
+        log_like = log_like + last_log_surv.squeeze(-1)  # (B,)
+
+        # Remove survival time from t_prev to t_nll_start
+        
+        if torch.any(batch.t_nll_start != batch.t_start):
+            prev_surv_context = context[arange, batch.start_idx, :]
+            prev_surv_dist = self.get_inter_time_dist(prev_surv_context)
+            prev_surv_time = batch.inter_times[arange, batch.start_idx] - (
+                batch.arrival_times[arange, batch.start_idx] - batch.t_nll_start
+            )
+            prev_log_surv = prev_surv_dist.log_survival(prev_surv_time)
+            log_like = log_like - prev_log_surv
+
+        return -log_like / (batch.t_end - batch.t_nll_start)  # (B,)
+
+    def get_inter_time_dist(self, context):
+        """Get the distribution over the inter-event times given the context."""
+        # call the dense layer
+        params = self.hypernet_time(context)
+        # Very small params may lead to numerical problems, clamp to avoid this
+        # params = clamp_preserve_gradients(params, -6.0, np.inf)
+        scale, shape, weight_logits = torch.split(
+            params,
+            [self.num_components, self.num_components, self.num_components],
+            dim=-1,
+        )
+        # softplus --> basically just a smooth ReLU
+        scale = F.softplus(scale.clamp_min(-5.0))
+        shape = F.softplus(shape.clamp_min(-5.0))
+        
+        weight_logits = F.log_softmax(weight_logits, dim=-1)
+        # create weibull distribution
+        component_dist = dist.Weibull(scale=scale, shape=shape)
+        # mixtrue dist --> create a categorical distribution
+        mixture_dist = Categorical(logits=weight_logits)
+        return dist.MixtureSameFamily(
+            mixture_distribution=mixture_dist,
+            component_distribution=component_dist,
+        )
+    
+
+    def get_magnitude_dist(self, context):
+        log_rate = self.hypernet_mag(context).squeeze(-1)  # (B, L)
+        b = self.richter_b * torch.ones_like(log_rate)
+        mag_min = self.mag_completeness * torch.ones_like(log_rate)
+        return dist.GutenbergRichter(b=b, mag_min=mag_min)
+
+    def log_survival(self, x: torch.Tensor) -> torch.Tensor:
+        x = self._pad(x)
+        log_sf_x = self.component_distribution.log_survival(x)
+        mix_logits = self.mixture_distribution.logits
+        return torch.logsumexp(log_sf_x + mix_logits, dim=-1)
