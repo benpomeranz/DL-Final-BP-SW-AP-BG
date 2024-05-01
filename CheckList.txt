@@ -2,6 +2,6 @@ To do:
 1. Merge model and model_experimental
 2. Add testing for preprocessing
 3. Add batching and sequencing for preprocessed data + test shape
-3. Run model without loss on random input or even better real input
+3. Run model without loss on random input or even better real input - DONE with random input! Shape correct!
 4. Implement Loss - SKYLAR! check out tf_p.distributions
 5. Implement training!

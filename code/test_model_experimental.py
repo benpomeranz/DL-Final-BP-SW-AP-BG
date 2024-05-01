@@ -2,6 +2,8 @@ import numpy as np
 import tensorflow as tf
 from model_experimental import Recurrent
 
+
+print(tf.__version__)
 # Create an instance of your model
 model = Recurrent()
 

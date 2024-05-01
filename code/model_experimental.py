@@ -92,17 +92,12 @@ class Recurrent(tf.keras.Model):
         print(f"Shape of rnn_output: {rnn_output.shape}")
 
         context = self.dropout(rnn_output, training=training)
+        ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
         print(f"Shape of context: {context.shape}")
 
         # Time distribution parameters
         time_params = self.hypernet_time(context)
-        # TODO: Split time_params and create a mixture distribution
-        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
-        # time_params = tf.concat(time_params, axis=-1)
-        # time_params = tf.reshape(time_params, [-1, 3, self.num_components])
-        # time_params = tf.nn.softmax(time_params, axis=-1)
-        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
-        # time_params = [tf.squeeze(param, axis=-1) for param in time_params]
+        ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
         scale, shape, weight_logits = tf.split(
         time_params,
         [self.num_components, self.num_components, self.num_components],
