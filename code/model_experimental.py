@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Reshape, Concatenate
@@ -25,7 +24,7 @@ class Recurrent(tf.keras.Model):
         richter_b: Fixed b value of the Gutenberg-Richter distribution for magnitudes.
         mag_completeness: Magnitude of completeness of the catalog.
         learning_rate: Learning rate used in optimization.
-        '''
+    '''
     
     def __init__(self, input_magnitude: bool = True, # to use magnitude as input
                  #predict_magnitude: bool = False, # output distribution, NOT magnitude
@@ -96,10 +95,14 @@ class Recurrent(tf.keras.Model):
         print(f"Shape of context: {context.shape}")
 
         # Time distribution parameters
-        weibull_params = self.hypernet_time(context)
+        time_params = self.hypernet_time(context)
         # TODO: Split time_params and create a mixture distribution
-
-        print(f"Shape of wei: {weibull_params.shape}")
+        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
+        # time_params = tf.concat(time_params, axis=-1)
+        # time_params = tf.reshape(time_params, [-1, 3, self.num_components])
+        # time_params = tf.nn.softmax(time_params, axis=-1)
+        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
+        # time_params = [tf.squeeze(param, axis=-1) for param in time_params]
         scale, shape, weight_logits = tf.split(
         weibull_params,
         [self.num_components, self.num_components, self.num_components],
