@@ -1,7 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Reshape, Concatenate
-from tensorflow.math import exp, sqrt, square
+from keras import Sequential
+from keras.layers import Dense, Flatten, Reshape, Concatenate
+from math import exp, sqrt, square
 import tensorflow_probability as tfp
 
 class Recurrent(tf.keras.Model):
@@ -75,14 +75,14 @@ class Recurrent(tf.keras.Model):
         # self.rnn = getattr(nn, rnn_type)(
         #     self.num_rnn_inputs, context_size, batch_first=True
         # )
-        self.dropout = nn.Dropout(dropout_proba)
+        self.dropout = tf.nn.Dropout(dropout_proba)
 
         # create rnn
         self.rnn = tf.keras.layers.GRU(context_size, return_sequences=True)
 
     
 
-        #call the rnn model on a batch of shape (sequence_length, 98) where each 98 is (time + magnitude + 96 accels), 
+        # call the rnn model on a batch of shape (sequence_length, 98) where each 98 is (time + magnitude + 96 accels), 
         # and get the weibull parameters of shape (sequence_length[-1?], 3*num components), and finally get 
         # distributions from those outputs for each event
     def call(self, batch):
