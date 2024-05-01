@@ -3,64 +3,12 @@ import numpy as np
 import os
 import math
 
-def accel_to_g(accel):
-    return np.array(accel) / 980.665
-
-# converts accel values to richter magnitudes
-def accel_to_rich(accel):
-    g = accel_to_g(accel)
-    mercalli_split = [.000464, .00175, .00297, .0276, .062, .115, .215, .401, .747, 1.39]
-    ratios = [val / next((mval for mval in mercalli_split if val < mval), mercalli_split[-1]) for val in g]
-    mercalli_ids = np.digitize(g, mercalli_split) + 1
-    mercalli_richter = {1:1, 2:3, 3:3.5, 4:4, 5:4.5, 6:5, 7:5.5, 8:6, 9:6.5, 10:7, 11:7.5, 12:8}
-    richter_vals = np.array([mercalli_richter[id] for id in mercalli_ids]) + ratios
-    return richter_vals
-
-#Takes in file at pathname, takes sqrt of of squared x y and z accelarations at each timestep to get total ground accelaration
-def add_total_accelaration(pathname:str):
-    # Get a list of all files in the directory
-    for dirpath, dirnames, filenames in os.walk(pathname):
-        # Process each JSONL file
-        for filename in filenames:
-            if filename.endswith('.jsonl'):
-                filepath = os.path.join(dirpath, filename)
-                with open(filepath, 'r') as file:
-                    lines = file.readlines()
-                # Process each line
-                for i, line in enumerate(lines):
-                    data = json.loads(line)
-                    # Calculate total acceleration
-                    total_acceleration = np.sqrt((np.square(data['x'])) + (np.square(data['y'])) + (np.square(data['z']))).tolist()
-                    # Add total acceleration info to the JSON object
-                    data['total_acceleration'] = total_acceleration
-                    # Write the updated JSON object back to the file
-                    lines[i] = json.dumps(data)
-                # Write the updated lines back to the file
-                with open(filepath, 'w') as file:
-                    file.write('\n'.join(lines))
-
-#Take in a path, walk through all jsonl files in said path, and for each line if said line's 'total_accelaration'
-# list of values contains a value greater than accel, add that to a new jsonl file in the root directory
-def data_with_accel(path:str, accel:float):
-    # Get a list of all files in the directory
-    for dirpath, dirnames, filenames in os.walk(path):
-        # Process each JSONL file
-        for filename in filenames:
-            if filename.endswith('.jsonl'):
-                filepath = os.path.join(dirpath, filename)
-                with open(filepath, 'r') as file:
-                    lines = file.readlines()
-                # Process each line
-                for line in lines:
-                    data = json.loads(line)
-                    # Check if 'total_acceleration' contains a value greater than 5
-                    if any(x > accel for x in data['total_acceleration']):
-                        # Write the line to a new JSONL file in the root directory
-                        with open(f"over{str(accel)}.jsonl", 'a') as output_file:
-                            output_file.write(line)
 
 #SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS: take in a single accelaration value, 
 # get a single richter value
+'''
+NOTE: May want to change the ratio computation to more closely fit the log function 
+'''
 def accel_to_rich_one(accel):
     g = accel / 980.665
     mercalli_split = [.000464, .00175, .00297, .0276, .062, .115, .215, .401, .747, 1.39]
@@ -69,7 +17,6 @@ def accel_to_rich_one(accel):
     mercalli_richter = {1:1, 2:3, 3:3.5, 4:4, 5:4.5, 6:5, 7:5.5, 8:6, 9:6.5, 10:7, 11:7.5, 12:8}
     richter_val = mercalli_richter[mercalli_id]
     richter_val += ratios
-    # print(richter_vals)
     return richter_val
 
 #Take a jsonl file, and for each line create data of the following format:
@@ -168,14 +115,5 @@ def full_preprocess(path:str, output:str, accel:float):
     sort_by_time(output)
     delete_within_x(output, 100)
     return jsonl_to_data(output)
-
-
-# full_preprocess("data_2018", "processed_2018_2", 1.7)
-
-# with open("processed_2018_2.jsonl", 'r') as file:
-#     lines = file.readlines()
-#     for line in lines:
-#         data = json.loads(line)
-#         print(len(data['total_acceleration']))
 
 print(jsonl_to_data('processed_2018_2'))
