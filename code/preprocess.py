@@ -73,13 +73,15 @@ def accel_to_rich_one(accel):
     return richter_val
 
 #Take a jsonl file, and for each line create data of the following format:
-#data[0]=richter, data[2]=accelaration matrix where the first row is the x accel, second row the y, 
+#data[1]=richter - avg, data[2]=accelaration matrix where the first row is the x accel, second row the y, 
 #and third row the z, and where we are subtracting the average of all accelaration values
-#  data[1] = log(t_i-t_{i-1})-(log_avg interval time) (seconds since start of 2018)
+#  data[0] = log(t_i-t_{i-1})-(log_avg interval time)
 def jsonl_to_data(filename, start_time, end_time):
     data = []
     time_intervals = []
     total_accels = []
+    richters = []
+
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
 
@@ -92,6 +94,7 @@ def jsonl_to_data(filename, start_time, end_time):
         inter_time = json_data_2['cloud_t']-json_data_1['cloud_t']
         time_intervals.append(inter_time)
         total_accels.append(np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']]))
+        richters.append(accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max()))
     log_avg_interval = math.log(sum(time_intervals) / len(time_intervals))
     average_accel = np.mean(total_accels)
 
@@ -101,7 +104,9 @@ def jsonl_to_data(filename, start_time, end_time):
     t = math.log(json_data['cloud_t']-start_time) - log_avg_interval
     richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
     accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
-    data.append([t-start_time, richter, accel_matrix - average_accel])
+    richters.append(richter)
+    richter_avg = np.average(richters)
+    data.append([t-start_time, richter-richter_avg, accel_matrix - average_accel])
 
     #For rest iterate through getting interval times
     for i in range(1, len(lines)):
@@ -113,7 +118,7 @@ def jsonl_to_data(filename, start_time, end_time):
         # print(np.array(json_data_2["total_acceleration"]).max())
         richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
         accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
-        data.append([t, richter, accel_matrix - average_accel])
+        data.append([t, richter-richter_avg, accel_matrix - average_accel])
     return data
 
 #takes in a JSONL filename WIHTOUT suffix, sorts by "cloud_t" value
