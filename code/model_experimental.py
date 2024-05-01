@@ -60,9 +60,8 @@ class Recurrent(tf.keras.Model):
         self.learning_rate = learning_rate
 
         # RNN input features
-        self.num_mag_params = 1 + int(self.input_magnitude) # (1 rate)
-        self.hypernet_time = tf.keras.layers.Dense(self.num_mag_params) # MIGHT NOT NEED --> used for time distribution
-        self.hypernet_mag = tf.keras.layers.Dense(self.num_mag_params) # MIGHT NOT NEED --> used for magnitude distribution
+        self.num_time_params = 3 * self.num_components
+        self.hypernet_time = tf.keras.layers.Dense(self.num_time_params) # MIGHT NOT NEED --> used for time distribution
         
         # RNN defining
         self.num_rnn_inputs = (
@@ -90,30 +89,28 @@ class Recurrent(tf.keras.Model):
 
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
+        ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
+        print(f"Shape of rnn_output: {rnn_output.shape}")
 
-        # dropout layer for overfit prevention
         context = self.dropout(rnn_output, training=training)
+        print(f"Shape of context: {context.shape}")
 
         # Time distribution parameters
         weibull_params = self.hypernet_time(context)
         # TODO: Split time_params and create a mixture distribution
-        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
-        # time_params = tf.concat(time_params, axis=-1)
-        # time_params = tf.reshape(time_params, [-1, 3, self.num_components])
-        # time_params = tf.nn.softmax(time_params, axis=-1)
-        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
-        # time_params = [tf.squeeze(param, axis=-1) for param in time_params]
+
+        print(f"Shape of wei: {weibull_params.shape}")
         scale, shape, weight_logits = tf.split(
         weibull_params,
         [self.num_components, self.num_components, self.num_components],
-        dim=-1,
+        axis=-1,
         )
-        scale = tf.math.softplus(scale.clamp_min(-5.0))
-        shape = tf.math.softplus(shape.clamp_min(-5.0))
-        weight_logits = tf.math.log_softmax(weight_logits, dim=-1)
+        scale = tf.math.softplus(tf.clip_by_value(scale, -5.0, float('inf')))
+        shape = tf.math.softplus(tf.clip_by_value(shape, -5.0, float('inf')))
+        weight_logits = tf.math.log_softmax(weight_logits, axis=-1)
         component_dists = tfp.distributions.Weibull(shape, scale)
         mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
         return tfp.distributions.MixtureSameFamily(
             mixture_distribution=mixture_dist,
-            component_distribution=component_dists,
+            components_distribution=component_dists,
             )
