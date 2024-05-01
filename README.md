@@ -12,3 +12,6 @@ Armaan: Added Sequence class to calculate log_hazard and survival of distributio
 
 4/27
 Ben: put together all of preprocessing, downloaded data for device 001 all of 2018 and got completely preprocessed data in processed_2018_2.jsonl (to )
+
+4/29: 
+Armaan: Played around with time_params in model call to see if I could create the distribution. Ended up leaving all my code as a comment bc I did not know how to check it.
