@@ -123,5 +123,7 @@ class Recurrent(tf.keras.Model):
             The negative log likelihood loss.
         '''
         log_like = distributions.log_prob(intervals.clamp_min(1e-10))
-        neg_log_likelihood = -tf.reduce_sum(log_probs)
+        neg_log_likelihood = -tf.reduce_sum(log_like)
+
+        log_surv = 
         return neg_log_likelihood
