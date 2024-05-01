@@ -104,6 +104,12 @@ class Recurrent(tf.keras.Model):
         time_params = self.hypernet_time(context)
         
         # TODO: Split time_params and create a mixture distribution
+        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
+        # time_params = tf.concat(time_params, axis=-1)
+        # time_params = tf.reshape(time_params, [-1, 3, self.num_components])
+        # time_params = tf.nn.softmax(time_params, axis=-1)
+        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
+        # time_params = [tf.squeeze(param, axis=-1) for param in time_params]
 
         # Outputs as dictionary for now
         outputs = {
