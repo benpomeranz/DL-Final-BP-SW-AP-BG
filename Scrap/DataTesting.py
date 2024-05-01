@@ -113,7 +113,7 @@ def jsonl_to_data(filename):
     total_accels = []
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
-    for i in range(1, len(lines) - 1):
+    for i in range(1, len(lines)):
         line2 = lines[i]
         line1 = lines[i - 1]
         # Process the pair of lines
@@ -123,8 +123,9 @@ def jsonl_to_data(filename):
         time_intervals.append(inter_time)
         total_accels.append(np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']]))
     log_avg_interval = math.log(sum(time_intervals) / len(time_intervals))
+    print("preprocess log avg:", log_avg_interval)
     average_accel = np.mean(total_accels, axis=0)
-    for i in range(1, len(lines) - 1):
+    for i in range(1, len(lines)):
         line2 = lines[i]
         line1 = lines[i - 1]
         json_data_2 = json.loads(line2)

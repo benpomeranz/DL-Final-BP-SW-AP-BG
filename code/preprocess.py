@@ -76,14 +76,14 @@ def accel_to_rich_one(accel):
 #data[0]=richter, data[2]=accelaration matrix where the first row is the x accel, second row the y, 
 #and third row the z, and where we are subtracting the average of all accelaration values
 #  data[1] = log(t_i-t_{i-1})-(log_avg interval time) (seconds since start of 2018)
-def jsonl_to_data(filename):
+def jsonl_to_data(filename, start_time, end_time):
     data = []
     time_intervals = []
     total_accels = []
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
 
-    for i in range(1, len(lines) - 1):
+    for i in range(1, len(lines)):
         line2 = lines[i]
         line1 = lines[i - 1]
         # Process the pair of lines
@@ -98,13 +98,13 @@ def jsonl_to_data(filename):
     #Append first datapoint:
     line0 = lines[0]
     json_data = json.loads(line0)
-    t = math.log(json_data['cloud_t'])
+    t = math.log(json_data['cloud_t']-start_time) - log_avg_interval
     richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
     accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
-    data.append([t, richter, accel_matrix - average_accel])
+    data.append([t-start_time, richter, accel_matrix - average_accel])
 
     #For rest iterate through getting interval times
-    for i in range(1, len(lines) - 1):
+    for i in range(1, len(lines)):
         line2 = lines[i]
         line1 = lines[i - 1]
         json_data_2 = json.loads(line2)
@@ -113,7 +113,6 @@ def jsonl_to_data(filename):
         # print(np.array(json_data_2["total_acceleration"]).max())
         richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
         accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
-        # print("=====================", (accel_matrix-average_accel).shape, "===========================")
         data.append([t, richter, accel_matrix - average_accel])
     return data
 
@@ -176,11 +175,11 @@ def add_total_and_select(path:str, output:str, accel:float):
 
 
 
-def full_preprocess(path:str, output:str, accel:float):
+def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time: int):
     add_total_and_select(path, output, accel)
     sort_by_time(output)
     delete_within_x(output, 100)
-    return jsonl_to_data(output)
+    return jsonl_to_data(output, start_time, end_time)
 
 
 # full_preprocess("data_2018", "processed_2018_2", 1.7)
