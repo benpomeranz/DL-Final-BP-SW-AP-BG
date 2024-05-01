@@ -4,6 +4,7 @@ from tensorflow.keras.layers import Dense, Flatten, Reshape, Concatenate
 from tensorflow.math import exp, sqrt, square
 import numpy as np
 import tensorflow_probability as tfp
+import matplotlib.pyplot as plt
 
 
 class Recurrent(tf.keras.Model):
@@ -89,10 +90,9 @@ class Recurrent(tf.keras.Model):
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
         ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
-        print(f"Shape of rnn_output: {rnn_output.shape}")
+        # print(f"Shape of rnn_output: {rnn_output.shape}")
 
         context = self.dropout(rnn_output, training=training)
-        ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
         print(f"Shape of context: {context.shape}")
 
         # Time distribution parameters
@@ -112,3 +112,20 @@ class Recurrent(tf.keras.Model):
             mixture_distribution=mixture_dist,
             components_distribution=component_dists,
             )
+
+
+
+    def loss(self, distributions, intervals):
+        '''
+        Compute the negative log likelihood loss.
+
+        Args:
+            distributions: A batch of sequences of TensorFlow distributions.
+            intervals: Shape (B, S) interval[]
+
+        Returns:
+            The negative log likelihood loss.
+        '''
+        log_like = distributions.log_prob(intervals.clamp_min(1e-10))
+        neg_log_likelihood = -tf.reduce_sum(log_probs)
+        return neg_log_likelihood
