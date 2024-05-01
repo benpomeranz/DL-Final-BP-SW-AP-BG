@@ -6,12 +6,14 @@ import numpy as np
 import tensorflow as tf
 # from data import Dataset
 from tqdm import tqdm
+from preprocess import jsonl_to_data 
 
 # from model import TPPModel
 # nll takes in list of distributions, input to call
-
+'''
+'''
 def train(model, data, batch_size, has_accel):
-    # converts the data of size (N, 3) into a Dataset and batches it into (batch_size, seq_size, 3)
+    times, magnitude, accels = jsonl_to_data(data, 0, 0)
     dataset = tf.data.Dataset.from_tensor_slices(data)
     batched_data = dataset.batch(batch_size=batch_size, drop_remainder=False)
     for batch in batched_data:
