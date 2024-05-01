@@ -1,7 +1,9 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 from keras import Sequential
 from keras.layers import Dense, Flatten, Reshape, Concatenate
-from math import exp, sqrt, square
+from math import exp, sqrt
+import numpy as np
 
 class Recurrent(tf.keras.Model):
 
@@ -111,7 +113,7 @@ class Recurrent(tf.keras.Model):
 
 
 
-    def loss(self, distributions, intervals):
+    def loss_function(self, distributions, intervals):
         '''
         Compute the negative log likelihood loss.
 
@@ -122,8 +124,14 @@ class Recurrent(tf.keras.Model):
         Returns:
             The negative log likelihood loss.
         '''
-        log_like = distributions.log_prob(intervals.clamp_min(1e-10))
-        neg_log_likelihood = -tf.reduce_sum(log_like)
+        log_like = distributions.log_prob(tf.maximum(intervals, 1e-10)) #(B, S,)
+        log_likelihood = tf.reduce_sum(log_like, -1)
 
-        log_surv = 
-        return neg_log_likelihood
+        arange = tf.range(log_like.shape[0])
+        len_sequence = log_like.shape[1]
+        log_surv = distributions.log_survival(
+            intervals[arange][len_sequence] #index into one after the last distribution, since we have num_distributions+1 time intervals
+        )
+        correct_log_surv = log_surv[arange][len_sequence-1]
+        log_likelihood = log_likelihood + tf.reduce_sum(correct_log_surv,-1)
+        return -log_likelihood # NORMALIZE THIS TODO TODO TODO 
