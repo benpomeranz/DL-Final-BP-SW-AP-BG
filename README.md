@@ -12,6 +12,3 @@ Armaan: Added Sequence class to calculate log_hazard and survival of distributio
 
 4/27
 Ben: put together all of preprocessing, downloaded data for device 001 all of 2018 and got completely preprocessed data in processed_2018_2.jsonl (to )
-
-4/30
-Ben: worked more on model, wrote up call for RNN but not loss, including weibull distributions which are super chill to get with TF woohoo!

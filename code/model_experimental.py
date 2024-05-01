@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 from keras import Sequential
 from keras.layers import Dense, Flatten, Reshape, Concatenate
@@ -22,7 +21,7 @@ class Recurrent(tf.keras.Model):
         richter_b: Fixed b value of the Gutenberg-Richter distribution for magnitudes.
         mag_completeness: Magnitude of completeness of the catalog.
         learning_rate: Learning rate used in optimization.
-        '''
+    '''
     
     def __init__(self, input_magnitude: bool = True, # to use magnitude as input
                  #predict_magnitude: bool = False, # output distribution, NOT magnitude
@@ -57,9 +56,8 @@ class Recurrent(tf.keras.Model):
         self.learning_rate = learning_rate
 
         # RNN input features
-        self.num_mag_params = 1 + int(self.input_magnitude) # (1 rate)
-        self.hypernet_time = tf.keras.layers.Dense(self.num_mag_params) # MIGHT NOT NEED --> used for time distribution
-        self.hypernet_mag = tf.keras.layers.Dense(self.num_mag_params) # MIGHT NOT NEED --> used for magnitude distribution
+        self.num_time_params = 3 * self.num_components
+        self.hypernet_time = tf.keras.layers.Dense(self.num_time_params) # MIGHT NOT NEED --> used for time distribution
         
         # RNN defining
         self.num_rnn_inputs = (
@@ -73,7 +71,7 @@ class Recurrent(tf.keras.Model):
         self.dropout = tf.keras.layers.Dropout(dropout_proba)
 
     # call function
-    def call(self, magnitudes, times, accels, has_accel=True, training=False):
+    def call(self, features, has_accel=True, training=False):
         '''
             inputs: 
                 magnitudes: array containing the magnitudes of events
@@ -82,37 +80,48 @@ class Recurrent(tf.keras.Model):
                 has_accel: boolean indicating if the acceleration is being used
         '''
 
-        features = []
-        # add magntiudes and times to features
-        features.append(times)
-        features.append(magnitudes)
-
-        # if training on acceleration data *** decide if we also want to only use mag or accel here!
-        if has_accel:
-            features.append(accels)
-
         # concatenate all features
-        features = tf.concat(features, axis=-1)
+        features = np.array(features)
 
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
+        ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
+        # print(f"Shape of rnn_output: {rnn_output.shape}")
 
-        # dropout layer for overfit prevention
         context = self.dropout(rnn_output, training=training)
+        print(f"Shape of context: {context.shape}")
 
         # Time distribution parameters
         time_params = self.hypernet_time(context)
-        # TODO: Split time_params and create a mixture distribution
-        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
-        # time_params = tf.concat(time_params, axis=-1)
-        # time_params = tf.reshape(time_params, [-1, 3, self.num_components])
-        # time_params = tf.nn.softmax(time_params, axis=-1)
-        # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
-        # time_params = [tf.squeeze(param, axis=-1) for param in time_params]
+        ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
+        scale, shape, weight_logits = tf.split(
+        time_params,
+        [self.num_components, self.num_components, self.num_components],
+        axis=-1,
+        )
+        scale = tf.math.softplus(tf.clip_by_value(scale, -5.0, float('inf')))
+        shape = tf.math.softplus(tf.clip_by_value(shape, -5.0, float('inf')))
+        weight_logits = tf.math.log_softmax(weight_logits, axis=-1)
+        component_dists = tfp.distributions.Weibull(shape, scale)
+        mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
+        return tfp.distributions.MixtureSameFamily(
+            mixture_distribution=mixture_dist,
+            components_distribution=component_dists,
+            )
 
-        # Outputs as dictionary for now
-        outputs = {
-            'time_params': time_params,
-            # 'magnitude_params': mag_params,  # Uncomment if magnitude is predicted
-        }
-        return outputs
+
+
+    def loss(self, distributions, intervals):
+        '''
+        Compute the negative log likelihood loss.
+
+        Args:
+            distributions: A batch of sequences of TensorFlow distributions.
+            intervals: Shape (B, S) interval[]
+
+        Returns:
+            The negative log likelihood loss.
+        '''
+        log_like = distributions.log_prob(intervals.clamp_min(1e-10))
+        neg_log_likelihood = -tf.reduce_sum(log_probs)
+        return neg_log_likelihood
