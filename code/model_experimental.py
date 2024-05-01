@@ -104,7 +104,7 @@ class Recurrent(tf.keras.Model):
         # time_params = tf.split(time_params, num_or_size_splits=3, axis=-1)
         # time_params = [tf.squeeze(param, axis=-1) for param in time_params]
         scale, shape, weight_logits = tf.split(
-        weibull_params,
+        time_params,
         [self.num_components, self.num_components, self.num_components],
         axis=-1,
         )
