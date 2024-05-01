@@ -70,7 +70,7 @@ class Recurrent(tf.keras.Model):
         # create rnn inputs
         self.num_rnn_inputs = 3 #3 generically, bc we have mag, accel, and time
 
-
+        
 
         # self.rnn = getattr(nn, rnn_type)(
         #     self.num_rnn_inputs, context_size, batch_first=True
