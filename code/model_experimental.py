@@ -102,6 +102,7 @@ class Recurrent(tf.keras.Model):
 
         # Time distribution parameters
         time_params = self.hypernet_time(context)
+        
         # TODO: Split time_params and create a mixture distribution
 
         # Outputs as dictionary for now
