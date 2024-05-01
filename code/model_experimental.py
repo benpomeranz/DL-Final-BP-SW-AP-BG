@@ -121,17 +121,17 @@ class Recurrent(tf.keras.Model):
 
 
 
-    def loss(self, distributions, targets):
+    def loss(self, distributions, intervals):
         '''
         Compute the negative log likelihood loss.
 
         Args:
             distributions: A batch of sequences of TensorFlow distributions.
-            targets: The target values.
+            intervals: Shape (B, S) interval[]
 
         Returns:
             The negative log likelihood loss.
         '''
-        log_probs = distributions.log_prob(targets)
+        log_like = distributions.log_prob(intervals.clamp_min(1e-10))
         neg_log_likelihood = -tf.reduce_sum(log_probs)
         return neg_log_likelihood
