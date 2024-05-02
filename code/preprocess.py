@@ -2,6 +2,7 @@ import json
 import numpy as np
 import os
 import math
+import argparse
 
 
 #SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS: take in a single accelaration value, 
@@ -117,8 +118,6 @@ def add_total_and_select(path:str, output:str, accel:float):
                     data['total_acceleration'] = total_acceleration
                     # Check if 'total_acceleration' contains a value greater than 5
                     if any(x > accel for x in data['total_acceleration']):
-                        # Add the total acceleration array to the JSON object
-                        data['total_acceleration'] = data['total_acceleration']
                         # Write the updated JSON object back to the file
                         line = json.dumps(data)
                         # Write the line to a new JSONL file in the root directory
@@ -133,4 +132,4 @@ def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time
     delete_within_x(output, 100)
     return jsonl_to_data(output, start_time, end_time)
 
-# print(jsonl_to_data('processed_2018_2', 0, 0))
+print(jsonl_to_data('processed_2018_2'))

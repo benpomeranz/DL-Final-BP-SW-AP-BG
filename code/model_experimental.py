@@ -73,7 +73,7 @@ class Recurrent(tf.keras.Model):
         self.dropout = tf.keras.layers.Dropout(dropout_proba)
 
     # call function
-    def call(self, features, has_accel=True, training=False):
+    def call(self, times, magnitudes, accelaration=None, has_accel=True, training=False):
         '''
             inputs: 
                 magnitudes: array containing the magnitudes of events
@@ -83,7 +83,7 @@ class Recurrent(tf.keras.Model):
         '''
 
         # concatenate all features
-        features = np.array(features)
+        features = tf.concat(times[:, :-1, :], magnitudes, accelaration)
 
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
