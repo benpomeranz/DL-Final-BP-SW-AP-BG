@@ -125,8 +125,8 @@ def add_total_and_select(path:str, output:str, accel:float):
                         with open(f"{output}.jsonl", 'a') as output_file:
                             output_file.write(f"{line}\n")
 
-
-
+# Takes in a path and preprocesses the data, returns the data
+# IMPORTANT: the return format of this function is 3 lists
 def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time: int):
     add_total_and_select(path, output, accel)
     sort_by_time(output)
