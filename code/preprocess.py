@@ -133,4 +133,4 @@ def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time
     delete_within_x(output, 100)
     return jsonl_to_data(output, start_time, end_time)
 
-print(jsonl_to_data('processed_2018_2'))
+# print(jsonl_to_data('processed_2018_2', 0, 0))
