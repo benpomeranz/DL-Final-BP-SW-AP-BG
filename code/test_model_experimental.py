@@ -4,6 +4,7 @@ from model_experimental import Recurrent
 import matplotlib.pyplot as plt
 import matplotlib
 import math
+from visuaization import save_distributions_images
 matplotlib.use('TkAgg')
 
 
@@ -20,15 +21,15 @@ def basic_test():
 
 
     # Plot the distributions
-    fig, axs = plt.subplots(1, 1, figsize=(8, 6))
-    dist = output[0]  # Select the first distribution in output
-    x = np.arange(0, .1, 0.001)  # Generate a list of numbers between -1 and 1
-    y = [dist.prob(i) for i in x]  # Reshape the input tensor to match the shape of the output tensor
-    print(x, y)
-    axs.plot(x, y)
-    axs.set_title("Distribution 1")
-    plt.tight_layout()
-    plt.show()
+    # fig, axs = plt.subplots(1, 1, figsize=(8, 6))
+    # dist = output[0]  # Select the first distribution in output
+    # x = np.arange(0, .1, 0.001)  # Generate a list of numbers between -1 and 1
+    # y = [dist.prob(i) for i in x]  # Reshape the input tensor to match the shape of the output tensor
+    # print(x, y)
+    # axs.plot(x, y)
+    # axs.set_title("Distribution 1")
+    # plt.tight_layout()
+    # plt.show()
 
 def test_loss():
     batch_size = 10
@@ -39,11 +40,35 @@ def test_loss():
     inputs = tf.concat([mags, time_intervals[:, :-1, :], accs], axis=-1)
     model = Recurrent()
     output = model(inputs)
-    print(model)
-    print(model.loss_function)
-    loss = model.loss_function(output, time_intervals[:, 1:, :])
-    print(loss)
+    print(f"Output: {output}")
+
+    save_distributions_images(output, (0, 10, 100), "output")
+    loss = model.loss_function(output, time_intervals[:, 1:, :], 0, 1)
+    print(f"Loss: {loss}")
     return loss
+
+def test_train_model():
+    batch_size = 10
+    sequence_size = 20
+    mags = 1.5 * np.random.randn(batch_size, sequence_size, 1) + 4
+    time_intervals = 50 * np.random.rand(batch_size, sequence_size + 1, 1) + 100
+    accs = 1.5 * np.random.randn(batch_size, sequence_size, 96) + 4
+    inputs = tf.concat([mags, time_intervals[:, :-1, :], accs], axis=-1)
+    model = Recurrent()
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    for epoch in range(10):
+        with tf.GradientTape() as tape:
+            output = model(inputs)
+            loss = model.loss_function(output, time_intervals[:, 1:, :], 0, 1)
+        grads = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        print(f"Epoch {epoch}, Loss: {loss}")
+        save_distributions_images(output, (0, 10, 100), f"output{epoch}")
+
+    return loss
+
+# basic_test()
+print(test_train_model())
 
 # Check the shape of the output
 # expected_shape = (10, 20)  # Replace with the expected shape of your output

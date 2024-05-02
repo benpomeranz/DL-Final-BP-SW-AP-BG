@@ -73,7 +73,7 @@ class Recurrent(tf.keras.Model):
         self.dropout = tf.keras.layers.Dropout(dropout_proba)
 
     # call function
-    def call(self, features, has_accel=True, training=False):
+    def call(self, times, magnitudes, accelaration=None, has_accel=True, training=False):
         '''
             inputs: 
                 magnitudes: array containing the magnitudes of events
@@ -83,7 +83,7 @@ class Recurrent(tf.keras.Model):
         '''
 
         # concatenate all features
-        features = np.array(features)
+        features = tf.concat(times[:, :-1, :], magnitudes, accelaration)
 
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
@@ -124,15 +124,15 @@ class Recurrent(tf.keras.Model):
         Returns:
             The negative log likelihood loss.
         '''
-        print(f"Shape of intervals: {intervals.shape}")
-        print(f"SHAPE OF CAST MAXED INTERVALS: {tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32).shape}")
+        #print(f"Shape of intervals: {intervals.shape}")
+        #print(f"SHAPE OF CAST MAXED INTERVALS: {tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32).shape}")
         log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32))) #(B, S,)
-        print(f"Shape of log_like: {log_like.shape}")
+        #print(f"Shape of log_like: {log_like.shape}")
         log_likelihood = tf.reduce_sum(log_like, -1)
 
         arange = tf.range(log_like.shape[0])
         len_sequence = log_like.shape[1]
-        print("ARANGE AND LEN SEQUENCE", arange, len_sequence)
+        #print("ARANGE AND LEN SEQUENCE", arange, len_sequence)
         log_surv = distributions.log_survival_function(
             intervals[:, -1, :] #index into one after the last distribution, since we have num_distributions+1 time intervals
         )
