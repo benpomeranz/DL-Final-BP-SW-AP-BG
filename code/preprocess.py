@@ -24,17 +24,18 @@ def accel_to_rich_one(accel):
 #and third row the z, and where we are subtracting the average of all accelaration values
 #  data[0] = log(t_i-t_{i-1})-(log_avg interval time)
 def jsonl_to_data(filename, start_time, end_time):
-    data = []
+    # data = []
     time_intervals = []
     total_accels = []
     richters = []
 
+    times = []
+    accels = []
+
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
 
-    # Time interval between start_time and event1
     time_intervals.append(json.loads(lines[0])['cloud_t'] - start_time)
-
     for i in range(1, len(lines)):
         line2 = lines[i]
         line1 = lines[i - 1]
@@ -45,12 +46,12 @@ def jsonl_to_data(filename, start_time, end_time):
         time_intervals.append(inter_time)
         total_accels.append(np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']]))
         richters.append(accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max()))
-
-    # Time interval between last event and end_time
     time_intervals.append(end_time - json_data_2['cloud_t'])
 
     log_avg_interval = math.log(sum(time_intervals) / len(time_intervals))
     average_accel = np.mean(total_accels)
+
+    richters = []
     
     #Append first datapoint:
     line0 = lines[0]
@@ -61,9 +62,6 @@ def jsonl_to_data(filename, start_time, end_time):
     richters.append(richter)
     richter_avg = np.average(richters)
 
-    times = []
-    richters = []
-    accels = []
     times.append(t-start_time)
     richters.append(richter-richter_avg)
     accels.append(accel_matrix - average_accel)
@@ -76,7 +74,6 @@ def jsonl_to_data(filename, start_time, end_time):
         json_data_2 = json.loads(line2)
         json_data_1= json.loads(line1)
         t = math.log(json_data_2['cloud_t']-json_data_1['cloud_t']) - log_avg_interval
-        # print(np.array(json_data_2["total_acceleration"]).max())
         richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
         accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
 
@@ -84,6 +81,7 @@ def jsonl_to_data(filename, start_time, end_time):
         richters.append(richter-richter_avg)
         accels.append(accel_matrix - average_accel)
         # data.append([t, richter-richter_avg, accel_matrix - average_accel])
+    times.append(end_time - json_data_2['cloud_t'])
     # return data
     return times, richters, accels
 
