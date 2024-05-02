@@ -40,7 +40,7 @@ def jsonl_to_data(filename, start_time, end_time):
     richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
     richters.append(richter)
     accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
-    accels.append(accel_matrix)
+    accels.append(accel_matrix.flatten())
 
     # Process the rest of the lines in pairs
     for i in range(1, len(lines)):
@@ -54,7 +54,7 @@ def jsonl_to_data(filename, start_time, end_time):
         richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
         richters.append(richter)
         accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
-        accels.append(accel_matrix)
+        accels.append(accel_matrix.flatten())
     times.append(math.log(end_time - json_data_2['cloud_t']))
 
     # Get average values after, and subtract them from relevant values
@@ -133,4 +133,4 @@ def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time
     delete_within_x(output, 100)
     return jsonl_to_data(output, start_time, end_time)
 
-print(jsonl_to_data('processed_2018_2'))
+# print(jsonl_to_data('processed_2018_2'))
