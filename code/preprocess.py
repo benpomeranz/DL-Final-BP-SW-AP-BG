@@ -71,7 +71,7 @@ def jsonl_to_data(filename, start_time, end_time):
 
 #takes in a JSONL filename WIHTOUT suffix, sorts by "cloud_t" value
 def sort_by_time(filename):
-    with open(f"{filename}.jsonl", 'r') as file:
+    with open(f"{filename}.jsonl", 'r+') as file:
         lines = file.readlines()
     sorted_lines = sorted(lines, key=lambda line: json.loads(line)['cloud_t'])
     with open(f"{filename}.jsonl", 'w') as file:
@@ -79,7 +79,7 @@ def sort_by_time(filename):
 
 #filepath does not include suffix, MODIFIES THE FILE
 def delete_within_x(filepath:str, num_secs:int):
-    with open(f"{filepath}.jsonl", 'r') as file:
+    with open(f"{filepath}.jsonl", 'r+') as file:
         lines = file.readlines()
     # Process each line
     prev_time = float('-inf')

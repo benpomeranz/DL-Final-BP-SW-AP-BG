@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 import matplotlib
 import math
 from visuaization import save_distributions_images
+from preprocess import full_preprocess
 matplotlib.use('TkAgg')
+
 
 
 def basic_test():
@@ -68,6 +70,7 @@ def test_train_model():
     return loss
 
 # basic_test()
+full_preprocess("code/big_data/device002/month=03/day=21/hour=18/45.jsonl", "test_output", 1.7, 0, 11000)
 print(test_train_model())
 
 # Check the shape of the output
