@@ -24,65 +24,48 @@ def accel_to_rich_one(accel):
 #and third row the z, and where we are subtracting the average of all accelaration values
 #  data[0] = log(t_i-t_{i-1})-(log_avg interval time)
 def jsonl_to_data(filename, start_time, end_time):
-    # data = []
-    time_intervals = []
-    total_accels = []
-    richters = []
-
     times = []
+    richters = []
     accels = []
 
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
 
-    time_intervals.append(json.loads(lines[0])['cloud_t'] - start_time)
-    for i in range(1, len(lines)):
-        line2 = lines[i]
-        line1 = lines[i - 1]
-        # Process the pair of lines
-        json_data_2 = json.loads(line2)
-        json_data_1= json.loads(line1)
-        inter_time = json_data_2['cloud_t']-json_data_1['cloud_t']
-        time_intervals.append(inter_time)
-        total_accels.append(np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']]))
-        richters.append(accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max()))
-    time_intervals.append(end_time - json_data_2['cloud_t'])
-
-    log_avg_interval = math.log(sum(time_intervals) / len(time_intervals))
-    average_accel = np.mean(total_accels)
-
-    richters = []
-    
-    #Append first datapoint:
+    # Process first line
     line0 = lines[0]
     json_data = json.loads(line0)
-    t = math.log(json_data['cloud_t']-start_time) - log_avg_interval
+    # Append time, richter, and acceleration
+    t = math.log(json_data['cloud_t']-start_time)
+    times.append(t)
     richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
-    accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
     richters.append(richter)
-    richter_avg = np.average(richters)
+    accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
+    accels.append(accel_matrix)
 
-    times.append(t-start_time)
-    richters.append(richter-richter_avg)
-    accels.append(accel_matrix - average_accel)
-    # data.append([t-start_time, richter-richter_avg, accel_matrix - average_accel])
-
-    #For rest iterate through getting interval times
+    # Process the rest of the lines in pairs
     for i in range(1, len(lines)):
         line2 = lines[i]
         line1 = lines[i - 1]
         json_data_2 = json.loads(line2)
         json_data_1= json.loads(line1)
-        t = math.log(json_data_2['cloud_t']-json_data_1['cloud_t']) - log_avg_interval
-        richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
-        accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
-
+        # Append time, richter, and acceleration
+        t = math.log(json_data_2['cloud_t']-json_data_1['cloud_t'])
         times.append(t)
-        richters.append(richter-richter_avg)
-        accels.append(accel_matrix - average_accel)
-        # data.append([t, richter-richter_avg, accel_matrix - average_accel])
-    times.append(end_time - json_data_2['cloud_t'])
-    # return data
+        richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
+        richters.append(richter)
+        accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
+        accels.append(accel_matrix)
+    times.append(math.log(end_time - json_data_2['cloud_t']))
+
+    # Get average values after, and subtract them from relevant values
+    log_avg_interval = math.log(sum(times) / len(times))
+    richter_avg = np.average(richters)
+    average_accel = np.mean(accels)
+
+    times = [t - log_avg_interval for t in times]
+    richters = [r - richter_avg for r in richters]
+    accels = [a - average_accel for a in accels]
+
     return times, richters, accels
 
 #takes in a JSONL filename WIHTOUT suffix, sorts by "cloud_t" value
@@ -150,4 +133,4 @@ def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time
     delete_within_x(output, 100)
     return jsonl_to_data(output, start_time, end_time)
 
-#print(jsonl_to_data('processed_2018_2'))
+print(jsonl_to_data('processed_2018_2'))
