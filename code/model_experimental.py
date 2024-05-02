@@ -83,7 +83,7 @@ class Recurrent(tf.keras.Model):
         '''
 
         # concatenate all features
-        features = tf.concat(times[:, :-1, :], magnitudes, accelaration)
+        features = tf.concat((times[:, :-1, :], magnitudes, accelaration), axis=-1)
 
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
@@ -119,14 +119,14 @@ class Recurrent(tf.keras.Model):
 
         Args:
             distributions: A batch of sequences of TensorFlow distributions.
-            intervals: Shape (B, S) interval[]
+            intervals: Shape (B, S, 1) interval[]
 
         Returns:
             The negative log likelihood loss.
         '''
         #print(f"Shape of intervals: {intervals.shape}")
         #print(f"SHAPE OF CAST MAXED INTERVALS: {tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32).shape}")
-        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32))) #(B, S,)
+        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32), axis=-1)) #(B, S,)
         #print(f"Shape of log_like: {log_like.shape}")
         log_likelihood = tf.reduce_sum(log_like, -1)
 
