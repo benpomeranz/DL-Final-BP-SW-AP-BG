@@ -12,7 +12,7 @@ from preprocess import jsonl_to_data
 # nll takes in list of distributions, input to call
 '''
 '''
-def train(model, data, batch_size, has_accel):
+def train(model, intervals, magnitudes, accels, batch_size, has_accel, start_time, end_time):
     times, magnitude, accels = jsonl_to_data(data, 0, 0)
     dataset = tf.data.Dataset.from_tensor_slices(data)
     batched_data = dataset.batch(batch_size=batch_size, drop_remainder=False)
@@ -20,7 +20,7 @@ def train(model, data, batch_size, has_accel):
         for magnitude, times, accels in batch:
             with tf.GradientTape() as tape:
                 pred = model(magnitude, times, accels, has_accel, training=True)
-                loss = model.nll(pred, has_accel)
+                loss = model.nll(pred, has_accel, start_time, end_time)
             grads = tape.gradient(loss, model.trainable_variables)
             model.optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
