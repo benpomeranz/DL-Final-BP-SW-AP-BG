@@ -113,7 +113,7 @@ class Recurrent(tf.keras.Model):
 
 
 
-    def loss_function(self, distributions, intervals):
+    def loss_function(self, distributions, intervals, start_time, end_time):
         '''
         Compute the negative log likelihood loss.
 
@@ -124,14 +124,17 @@ class Recurrent(tf.keras.Model):
         Returns:
             The negative log likelihood loss.
         '''
-        log_like = distributions.log_prob(tf.maximum(intervals, 1e-10)) #(B, S,)
+        print(f"Shape of intervals: {intervals.shape}")
+        print(f"SHAPE OF CAST MAXED INTERVALS: {tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32).shape}")
+        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32))) #(B, S,)
+        print(f"Shape of log_like: {log_like.shape}")
         log_likelihood = tf.reduce_sum(log_like, -1)
 
         arange = tf.range(log_like.shape[0])
         len_sequence = log_like.shape[1]
-        log_surv = distributions.log_survival(
-            intervals[arange][len_sequence] #index into one after the last distribution, since we have num_distributions+1 time intervals
+        print("ARANGE AND LEN SEQUENCE", arange, len_sequence)
+        log_surv = distributions.log_survival_function(
+            intervals[:, -1, :] #index into one after the last distribution, since we have num_distributions+1 time intervals
         )
-        correct_log_surv = log_surv[arange][len_sequence-1]
-        log_likelihood = log_likelihood + tf.reduce_sum(correct_log_surv,-1)
-        return -log_likelihood # NORMALIZE THIS TODO TODO TODO 
+        log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
+        return -log_likelihood/(end_time-start_time) # NORMALIZE THIS TODO TODO TODO 
