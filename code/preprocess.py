@@ -24,7 +24,6 @@ def accel_to_rich_one(accel):
 #and third row the z, and where we are subtracting the average of all accelaration values
 #  data[0] = log(t_i-t_{i-1})-(log_avg interval time)
 def jsonl_to_data(filename, start_time, end_time):
-    # data = []
     time_intervals = []
     total_accels = []
     richters = []
@@ -52,7 +51,7 @@ def jsonl_to_data(filename, start_time, end_time):
     average_accel = np.mean(total_accels)
 
     richters = []
-    
+
     #Append first datapoint:
     line0 = lines[0]
     json_data = json.loads(line0)
@@ -62,7 +61,7 @@ def jsonl_to_data(filename, start_time, end_time):
     richters.append(richter)
     richter_avg = np.average(richters)
 
-    times.append(t-start_time)
+    times.append(t)
     richters.append(richter-richter_avg)
     accels.append(accel_matrix - average_accel)
     # data.append([t-start_time, richter-richter_avg, accel_matrix - average_accel])
@@ -150,4 +149,4 @@ def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time
     delete_within_x(output, 100)
     return jsonl_to_data(output, start_time, end_time)
 
-print(jsonl_to_data('processed_2018_2'))
+# print(jsonl_to_data('processed_2018_2'))
