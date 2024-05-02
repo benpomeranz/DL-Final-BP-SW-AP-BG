@@ -41,10 +41,9 @@ def test_loss():
     output = model(inputs)
     print(model)
     print(model.loss_function)
-    loss = model.loss_function(output, time_intervals)
+    loss = model.loss_function(output, time_intervals[:, 1:, :])
+    print(loss)
     return loss
-
-test_loss()
 
 # Check the shape of the output
 # expected_shape = (10, 20)  # Replace with the expected shape of your output
