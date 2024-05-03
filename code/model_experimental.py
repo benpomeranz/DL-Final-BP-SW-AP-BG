@@ -116,7 +116,7 @@ class Recurrent(tf.keras.Model):
     def encode_time(self, inter_times):
         log_t = tf.math.log(inter_times)
         encoded_time = log_t - tf.reduce_mean(log_t, axis=1)
-        print("ENCODED SHAPE----------------",encoded_time.shape)
+        #print("ENCODED SHAPE----------------",encoded_time.shape)
         return encoded_time
 
     def loss_function(self, distributions, intervals, start_time, end_time):
@@ -130,14 +130,10 @@ class Recurrent(tf.keras.Model):
         Returns:
             The negative log likelihood loss.
         '''
-        # print(f"Shape of intervals: {intervals.shape}")
-        #print(f"SHAPE OF CAST MAXED INTERVALS: {tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32).shape}")
+       
         log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-9), dtype=tf.float32), axis=-1)) #(B, S,)
-        log_likelihood = tf.reduce_sum(log_like, -1)
-
-        arange = tf.range(log_like.shape[0])
-        len_sequence = log_like.shape[1]
-        #print("ARANGE AND LEN SEQUENCE", arange, len_sequence)
+        log_likelihood = tf.reduce_sum(log_like, -1) # (B,)
+        
         surv = distributions.survival_function(
             tf.cast(tf.maximum(intervals[:, -1, :], 1e-9), dtype=tf.float32) #index into one after the last distribution, since we have num_distributions+1 time intervals
         )[:, -1]

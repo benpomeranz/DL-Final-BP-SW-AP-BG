@@ -7,7 +7,6 @@ __pycache__/
 *.so
 
 #Ignore the downloaded eew data
-
 data_2018/
 my_data.csv
 devices.jsonl

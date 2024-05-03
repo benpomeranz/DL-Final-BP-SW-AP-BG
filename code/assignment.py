@@ -72,6 +72,7 @@ def main():
                     losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
                     epoch_validation_losses.append(losses)
             validation_losses.append(tf.math.reduce_mean(epoch_validation_losses))
+            print(f"Epoch {i}, Training Loss: {training_losses[-1]}, Validation Loss: {validation_losses[-1]}")
 
     visuaization.plot_loss(training_losses, training=True)
     visuaization.plot_loss(validation_losses, training=False)
@@ -83,20 +84,9 @@ def main():
             times, magnitudes, accels = visuaization.jsonl_to_data(file_path, start_time, end_time)
             losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
             test_losses.append(losses)
+            print(f"Test Loss: {test_losses[-1]}")
 
     visuaization.plot_loss(test_losses, training=False)
-    
-    # #testing output: train on one device then run this on anohter
-    # times, magnitudes, accels = jsonl_to_data('big_data/device023_preprocessed', start_time, end_time)
-    # times = np.expand_dims(np.array(times).T, axis=[0,2])
-    # magnitudes = np.expand_dims(np.array(magnitudes).T, axis=[0,2])
-    # accels = np.expand_dims(np.array(accels), axis=[0])
-    # print("=================TESTING OUTPUT====================")
-    # dist = model(times, magnitudes, accels, has_accel=True, training=False)
-
-    # print("=================TESTING LOSS====================")
-    # test_loss = model.loss_function(dist, times[:, 1:, :], start_time, end_time)
-    # print(f"test_loss: {test_loss}")
 
 
 if __name__ == "__main__":
