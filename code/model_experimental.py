@@ -35,7 +35,7 @@ class Recurrent(tf.keras.Model):
                  mag_mean: float = 0.0, # mean earthquake magnitude in data
                  richter_b: float = 1.0, # fixed b value of Gutenberg-Richter distribution
                  mag_completeness: float = 2.0, # magnitude completeness
-                 learning_rate: float = 5e-2):
+                 learning_rate: float = .001):
         
         # initialize model
         super().__init__()
@@ -87,15 +87,12 @@ class Recurrent(tf.keras.Model):
             features = tf.concat((times[:, :-1, :], magnitudes, accelaration), axis=-1)
         else:
             features = tf.concat((times[:, :-1, :], magnitudes), axis=-1)
-
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
         ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
         # print(f"Shape of rnn_output: {rnn_output.shape}")
 
         context = self.dropout(rnn_output, training=training)
-        #print(f"Shape of context: {context.shape}")
-
         # Time distribution parameters
         time_params = self.hypernet_time(context)
         ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
@@ -107,6 +104,7 @@ class Recurrent(tf.keras.Model):
         scale = tf.math.softplus(tf.clip_by_value(scale, -5.0, float('inf')))
         shape = tf.math.softplus(tf.clip_by_value(shape, -5.0, float('inf')))
         weight_logits = tf.math.log_softmax(weight_logits, axis=-1)
+        # print(shape, "\n", scale, "\n", weight_logits)
         component_dists = tfp.distributions.Weibull(shape, scale)
         mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
         
@@ -116,8 +114,10 @@ class Recurrent(tf.keras.Model):
             )
 
     def encode_time(self, inter_times):
-        return
-
+        log_t = tf.math.log(inter_times)
+        encoded_time = log_t - tf.reduce_mean(log_t, axis=1)
+        print("ENCODED SHAPE----------------",encoded_time.shape)
+        return encoded_time
 
     def loss_function(self, distributions, intervals, start_time, end_time):
         '''
@@ -130,18 +130,30 @@ class Recurrent(tf.keras.Model):
         Returns:
             The negative log likelihood loss.
         '''
-        #print(f"Shape of intervals: {intervals.shape}")
+        # print(f"Shape of intervals: {intervals.shape}")
         #print(f"SHAPE OF CAST MAXED INTERVALS: {tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32).shape}")
-        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32), axis=-1)) #(B, S,)
+        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-9), dtype=tf.float32), axis=-1)) #(B, S,)
         log_likelihood = tf.reduce_sum(log_like, -1)
 
         arange = tf.range(log_like.shape[0])
         len_sequence = log_like.shape[1]
         #print("ARANGE AND LEN SEQUENCE", arange, len_sequence)
-        log_surv = distributions.log_survival_function(
-            tf.cast(tf.maximum(intervals[:, -1, :], 1e-10), dtype=tf.float32) #index into one after the last distribution, since we have num_distributions+1 time intervals
-        )
+        surv = distributions.survival_function(
+            tf.cast(tf.maximum(intervals[:, -1, :], 1e-9), dtype=tf.float32) #index into one after the last distribution, since we have num_distributions+1 time intervals
+        )[:, -1]
+        try:
+            tf.debugging.check_numerics(surv, "Tensor has NaN values")
+            pass
+        except Exception as e:
+            print("surv:", surv)
+            print("distributions:", distributions)
+            print(tf.cast(tf.maximum(intervals[:, -1, :], 1e-9), dtype=tf.float32))
+        log_surv = tf.math.log(tf.maximum(surv, 1e-9))
+        try:
+            tf.debugging.check_numerics(log_surv, "Tensor has NaN values")
+        except Exception as e:
+            print("log_surv:", log_surv)
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
 
         print(f"log_likelihood: {log_likelihood}")
-        return -log_likelihood/(end_time-start_time)*86400 # NORMALIZing THIS by number of DAYS TODO TODO TODO
+        return -log_likelihood/(end_time-start_time) # NORMALIZing THIS by number of DAYS TODO TODO TODO 

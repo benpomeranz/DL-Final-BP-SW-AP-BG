@@ -6,7 +6,6 @@ import argparse
 import time
 import datetime
 
-
 #SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS: take in a single accelaration value, 
 # get a single richter value
 '''
