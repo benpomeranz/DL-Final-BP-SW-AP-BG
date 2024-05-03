@@ -59,7 +59,7 @@ def jsonl_to_data(filename, start_time, end_time):
     times.append(math.log(end_time - json_data_2['cloud_t']))
 
     # Get average values after, and subtract them from relevant values
-    log_avg_interval = math.log(sum(times) / len(times))
+    log_avg_interval = (sum(times) / len(times))
     richter_avg = np.average(richters)
     average_accel = np.mean(accels)
 
