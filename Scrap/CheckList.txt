@@ -1,5 +1,0 @@
-To do:
-1. Run model on lots of data
-2. See if distributions look meaningful at all
-3. Test accuracy in 95% confidence interval
-4. Create visuals for seqeuences/data
