@@ -81,7 +81,8 @@ class Recurrent(tf.keras.Model):
                 accels: array containing the accelerations of events
                 has_accel: boolean indicating if the acceleration is being used
         '''
-
+        # encode time
+        times = self.encode_time(times)
         # concatenate all features
         if has_accel:
             features = tf.concat((times[:, :-1, :], magnitudes, accelaration), axis=-1)
