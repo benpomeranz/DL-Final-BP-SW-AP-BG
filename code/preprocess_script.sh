@@ -19,8 +19,8 @@ do
         # Download the files from S3
         aws s3 cp --no-sign-request s3://grillo-openeew/records/country_code=mx/device_id=${device_id}/year=${year} "$output_dir/device${device_id}" --recursive
         # Run the Python preprocessing script on the files in the directory
-        # python preprocess.py "$output_dir/device${device_id}" "$output_dir/device${device_id}_preprocessed"
+         python preprocess.py "$output_dir/device${device_id}" "$output_dir/device${device_id}_preprocessed"
         # Delete the downloaded data directory
-        # rm -rf "$output_dir/device${device_id}"
+        rm -rf "$output_dir/device${device_id}"
     done
 done

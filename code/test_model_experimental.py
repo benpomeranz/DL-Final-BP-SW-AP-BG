@@ -41,7 +41,7 @@ def test_loss():
     accs = 1.5 * np.random.randn(batch_size, sequence_size, 96) + 4
     inputs = tf.concat([mags, time_intervals[:, :-1, :], accs], axis=-1)
     model = Recurrent()
-    output = model(inputs)
+    output = model(time_intervals, mags, accs, has_accel=True, training=False)
     print(f"Output: {output}")
 
     save_distributions_images(output, (0, 10, 100), "output")
@@ -50,7 +50,8 @@ def test_loss():
     return loss
 
 def test_train_model():
-    batch_size = 10
+    # wont work anymore, change format of inputs
+    batch_size = 1
     sequence_size = 20
     mags = 1.5 * np.random.randn(batch_size, sequence_size, 1) + 4
     time_intervals = 50 * np.random.rand(batch_size, sequence_size + 1, 1) + 100
@@ -70,8 +71,9 @@ def test_train_model():
     return loss
 
 # basic_test()
-full_preprocess("code/big_data/device002/month=03/day=21/hour=18/45.jsonl", "test_output", 1.7, 0, 11000)
-print(test_train_model())
+print(test_loss())
+# full_preprocess("code/big_data/device002/month=03/day=21/hour=18/45.jsonl", "test_output", 1.7, 0, 11000)
+# print(test_train_model())
 
 # Check the shape of the output
 # expected_shape = (10, 20)  # Replace with the expected shape of your output

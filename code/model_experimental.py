@@ -83,7 +83,10 @@ class Recurrent(tf.keras.Model):
         '''
 
         # concatenate all features
-        features = tf.concat(times[:, :-1, :], magnitudes, accelaration)
+        if has_accel:
+            features = tf.concat((times[:, :-1, :], magnitudes, accelaration), axis=-1)
+        else:
+            features = tf.concat((times[:, :-1, :], magnitudes), axis=-1)
 
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
@@ -111,7 +114,7 @@ class Recurrent(tf.keras.Model):
             components_distribution=component_dists,
             )
 
-
+    def encode_time(self, inter_times):
 
     def loss_function(self, distributions, intervals, start_time, end_time):
         '''
@@ -119,22 +122,22 @@ class Recurrent(tf.keras.Model):
 
         Args:
             distributions: A batch of sequences of TensorFlow distributions.
-            intervals: Shape (B, S) interval[]
+            intervals: Shape (B, S, 1) interval[]
 
         Returns:
             The negative log likelihood loss.
         '''
         #print(f"Shape of intervals: {intervals.shape}")
         #print(f"SHAPE OF CAST MAXED INTERVALS: {tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32).shape}")
-        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32))) #(B, S,)
-        #print(f"Shape of log_like: {log_like.shape}")
+        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32), axis=-1)) #(B, S,)
         log_likelihood = tf.reduce_sum(log_like, -1)
 
         arange = tf.range(log_like.shape[0])
         len_sequence = log_like.shape[1]
         #print("ARANGE AND LEN SEQUENCE", arange, len_sequence)
         log_surv = distributions.log_survival_function(
-            intervals[:, -1, :] #index into one after the last distribution, since we have num_distributions+1 time intervals
+            tf.cast(tf.maximum(intervals[:, -1, :], 1e-10), dtype=tf.float32) #index into one after the last distribution, since we have num_distributions+1 time intervals
         )
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
-        return -log_likelihood/(end_time-start_time) # NORMALIZE THIS TODO TODO TODO 
+        print(f"log_likelihood: {log_likelihood}")
+        return -log_likelihood/(end_time-start_time)*86400 # NORMALIZing THIS by number of DAYS TODO TODO TODO 
