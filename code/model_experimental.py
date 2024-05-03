@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 from keras import Sequential
-from keras.layers import Dense, Flatten, Reshape, Concatenate
+#from keras_layers import Dense, Flatten, Reshape, Concatenate
 from math import exp, sqrt
 import numpy as np
 
@@ -109,12 +109,15 @@ class Recurrent(tf.keras.Model):
         weight_logits = tf.math.log_softmax(weight_logits, axis=-1)
         component_dists = tfp.distributions.Weibull(shape, scale)
         mixture_dist = tfp.distributions.Categorical(logits=weight_logits)
+        
         return tfp.distributions.MixtureSameFamily(
             mixture_distribution=mixture_dist,
             components_distribution=component_dists,
             )
 
     def encode_time(self, inter_times):
+        return
+
 
     def loss_function(self, distributions, intervals, start_time, end_time):
         '''
@@ -139,5 +142,6 @@ class Recurrent(tf.keras.Model):
             tf.cast(tf.maximum(intervals[:, -1, :], 1e-10), dtype=tf.float32) #index into one after the last distribution, since we have num_distributions+1 time intervals
         )
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
+
         print(f"log_likelihood: {log_likelihood}")
-        return -log_likelihood/(end_time-start_time)*86400 # NORMALIZing THIS by number of DAYS TODO TODO TODO 
+        return -log_likelihood/(end_time-start_time)*86400 # NORMALIZing THIS by number of DAYS TODO TODO TODO

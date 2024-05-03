@@ -7,7 +7,8 @@ import numpy as np
 import tensorflow as tf
 # from data import Dataset
 from tqdm import tqdm
-import preprocess
+import preprocess 
+from preprocess import jsonl_to_data
 from model_experimental import Recurrent
 import visuaization
 
