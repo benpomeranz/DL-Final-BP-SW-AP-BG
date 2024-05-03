@@ -68,7 +68,8 @@ class Recurrent(tf.keras.Model):
         )
 
         # input size is num_rnn_inputs
-        self.rnn = tf.keras.layers.GRU(units=hidden_size, return_sequences=True)
+        #self.rnn = tf.keras.layers.GRU(units=hidden_size, return_sequences=True)
+        self.rnn = tf.keras.layers.LSTM(units=hidden_size, return_sequences=True, recurrent_dropout=0.5)
         # dropout
         self.dropout = tf.keras.layers.Dropout(dropout_proba)
 
@@ -115,7 +116,7 @@ class Recurrent(tf.keras.Model):
             )
 
     def encode_time(self, inter_times):
-        log_t = tf.math.log(inter_times)
+        log_t = tf.math.log(inter_times + 1e-10)
         encoded_time = log_t - tf.reduce_mean(log_t, axis=1)
         #print("ENCODED SHAPE----------------",encoded_time.shape)
         return encoded_time
@@ -132,7 +133,7 @@ class Recurrent(tf.keras.Model):
             The negative log likelihood loss.
         '''
        
-        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-9), dtype=tf.float32), axis=-1)) #(B, S,)
+        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32), axis=-1)) #(B, S,)
         log_likelihood = tf.reduce_sum(log_like, -1) # (B,)
         
         surv = distributions.survival_function(
@@ -144,13 +145,13 @@ class Recurrent(tf.keras.Model):
         except Exception as e:
             print("surv:", surv)
             print("distributions:", distributions)
-            print(tf.cast(tf.maximum(intervals[:, -1, :], 1e-9), dtype=tf.float32))
-        log_surv = tf.math.log(tf.maximum(surv, 1e-9))
+            print(tf.cast(tf.maximum(intervals[:, -1, :], 1e-10), dtype=tf.float32))
+        log_surv = tf.math.log(tf.maximum(surv, 1e-10) + 1e-10)
         try:
             tf.debugging.check_numerics(log_surv, "Tensor has NaN values")
         except Exception as e:
             print("log_surv:", log_surv)
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
 
-        print(f"log_likelihood: {log_likelihood}")
+        #print(f"log_likelihood: {log_likelihood}")
         return -log_likelihood/(end_time-start_time) # NORMALIZing THIS by number of DAYS TODO TODO TODO 

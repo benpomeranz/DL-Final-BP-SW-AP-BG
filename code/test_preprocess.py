@@ -8,9 +8,7 @@ def test_preprocess():
     assert len(times) == 13
     assert len(richters) == 12
     assert len(accels) == 12
-    # for data in test_batch:
-    #     print(data[0])
-    #TODO: CHECK ON LOGS TO MAKE SURE THEY ARE CORRECT  - DONE!
+
 def get_jsonl_files(directory):
     jsonl_files = []
     for month_dir in os.listdir(directory):

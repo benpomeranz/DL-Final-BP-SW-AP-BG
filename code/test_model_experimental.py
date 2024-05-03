@@ -23,15 +23,15 @@ def basic_test():
 
 
     # Plot the distributions
-    # fig, axs = plt.subplots(1, 1, figsize=(8, 6))
-    # dist = output[0]  # Select the first distribution in output
-    # x = np.arange(0, .1, 0.001)  # Generate a list of numbers between -1 and 1
-    # y = [dist.prob(i) for i in x]  # Reshape the input tensor to match the shape of the output tensor
-    # print(x, y)
-    # axs.plot(x, y)
-    # axs.set_title("Distribution 1")
-    # plt.tight_layout()
-    # plt.show()
+    fig, axs = plt.subplots(1, 1, figsize=(8, 6))
+    dist = output[0]  # Select the first distribution in output
+    x = np.arange(0, .1, 0.001)  # Generate a list of numbers between -1 and 1
+    y = [dist.prob(i) for i in x]  # Reshape the input tensor to match the shape of the output tensor
+    print(x, y)
+    axs.plot(x, y)
+    axs.set_title("Distribution 1")
+    plt.tight_layout()
+    plt.show()
 
 def test_loss():
     batch_size = 10
@@ -43,9 +43,10 @@ def test_loss():
     model = Recurrent()
     output = model(time_intervals, mags, accs, has_accel=True, training=False)
     print(f"Output: {output}")
-
-    save_distributions_images(output, (0, 10, 100), "output")
     loss = model.loss_function(output, time_intervals[:, 1:, :], 0, 1)
+
+
+
     print(f"Loss: {loss}")
     return loss
 
@@ -71,7 +72,7 @@ def test_train_model():
     return loss
 
 # basic_test()
-print(test_loss())
+test_loss()
 # full_preprocess("code/big_data/device002/month=03/day=21/hour=18/45.jsonl", "test_output", 1.7, 0, 11000)
 # print(test_train_model())
 

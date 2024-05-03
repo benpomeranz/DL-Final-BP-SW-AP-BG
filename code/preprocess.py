@@ -30,7 +30,7 @@ def jsonl_to_data(filename, start_time, end_time):
     richters = []
     accels = []
 
-    with open(f"{filename}.jsonl", 'r') as file:
+    with open(f"{filename}", 'r') as file:
         lines = file.readlines()
 
     # Process first line
@@ -147,7 +147,6 @@ def get_year_unix_times(year:int) -> tuple:
     end_unix = int(time.mktime(end_time.timetuple()))
 
     return (start_unix, end_unix+1)
-
 
 def main():
     parser = argparse.ArgumentParser(description='Preprocess data')
