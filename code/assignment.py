@@ -2,6 +2,7 @@ import argparse
 import math
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import os
 import numpy as np
 import tensorflow as tf
 # from data import Dataset
@@ -27,20 +28,52 @@ def train(model, times, magnitudes, accels, start_time, end_time, sequence_lengt
         #print(f"Model Trainable Variables: {model.trainable_variables}")
         visuaization.save_distributions_images(pred, (start_time, end_time, 100), "output")
         losses.append(loss)
-        print(f"Loss: {loss}")
     grads = tape.gradient(loss, model.trainable_variables)
     model.optimizer.apply_gradients(zip(grads, model.trainable_variables))
     return losses, pred
 
-def main():
-    start_time = 1514782800
-    end_time = 1546318800
+def validate(model, times, magnitudes, accels, start_time, end_time, sequence_length, has_accel):
+    losses = []
+    times = np.expand_dims(np.array(times).T, axis=[0,2])
+    magnitudes = np.expand_dims(np.array(magnitudes).T, axis=[0,2])
+    accels = np.expand_dims(np.array(accels), axis=[0])
+    pred = model(times, magnitudes, accels, has_accel=has_accel, training=False)
+    loss = model.loss_function(pred, times[:, 1:, :], start_time, end_time)
+    losses.append(loss)
+    return losses, pred
 
-    times, magnitudes, accels = jsonl_to_data('big_data/device021_preprocessed', start_time, end_time)
+def main():
+    start_time, end_time = preprocess.get_year_unix_times(2018)
+    epochs = 20
     model = Recurrent()
-    for i in range(200):
-        print(f"Epoch {i}")
-        dist = train(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
+    training_losses = []
+    validation_losses = []
+    test_losses = []
+
+    # Here is some code to loop through all of our training data and then run it against our validation data
+    if os.path.exists('data/training'):
+        # We now loop through all of our training data for the specified number of epochs
+        for i in range(epochs):
+            epoch_training_losses = []
+            epoch_validation_losses = []
+            for filename in os.listdir('data/training'):
+                file_path = os.path.join('data/training', filename)
+                if os.path.isfile(file_path):
+                    times, magnitudes, accels = visuaization.jsonl_to_data(file_path, start_time, end_time)
+                    losses, train_pred = train(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
+                    epoch_training_losses.append(losses)
+            training_losses.append(tf.math.reduce_mean(epoch_training_losses))
+            # We now loop through all of our validation data
+            for filename in os.listdir('data/validation'):
+                file_path = os.path.join('data/validation', filename)
+                if os.path.isfile(file_path):
+                    times, magnitudes, accels = visuaization.jsonl_to_data(file_path, start_time, end_time)
+                    losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
+                    epoch_validation_losses.append(losses)
+            validation_losses.append(tf.math.reduce_mean(epoch_validation_losses))
+
+    visuaization.plot_loss(training_losses, training=True)
+    visuaization.plot_loss(validation_losses, training=False)
     
     # #testing output: train on one device then run this on anohter
     # times, magnitudes, accels = jsonl_to_data('big_data/device023_preprocessed', start_time, end_time)

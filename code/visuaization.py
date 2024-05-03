@@ -63,10 +63,13 @@ def save_distributions_images(distributions, time_range, output_dir):
 # save_distributions_images(predicted_distribution, (0, 100, 500), 'output_images')
 
 # Plotting function to visualize the loss
-def plot_loss(training_losses):
+def plot_loss(losses, training: bool = True):
     plt.figure(figsize=(8, 6))
-    plt.plot(training_losses, label='Training Loss')
-    plt.title('Loss During Training')
+    plt.plot(losses, label='Training Loss')
+    if not training:
+        plt.plot(losses, label='Validation Loss')
+    else:
+        plt.title('Loss During Training')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
