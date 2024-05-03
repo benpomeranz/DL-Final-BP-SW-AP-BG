@@ -3,6 +3,8 @@ import numpy as np
 import os
 import math
 import argparse
+import time
+import datetime
 
 
 #SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS: take in a single accelaration value, 
@@ -131,16 +133,34 @@ def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time
     sort_by_time(output)
     delete_within_x(output, 100)
 
+def get_year_unix_times(year:int) -> tuple:
+    '''
+    Get the Unix timestamps for the start and end of a given year
+
+    Args: Year: int representing the year
+    Returns: Tuple of Unix timestamps (start, end)
+    '''
+    # Start of the year (January 1st, 00:00:00)
+    start_time = datetime.datetime(year, 1, 1, 0, 0, 0)
+    # End of the year (December 31st, 23:59:59)
+    end_time = datetime.datetime(year, 12, 31, 23, 59, 59)
+
+    # Converting datetime objects to Unix timestamps
+    start_unix = int(time.mktime(start_time.timetuple()))
+    end_unix = int(time.mktime(end_time.timetuple()))
+
+    return (start_unix, end_unix+1)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Preprocess data')
     parser.add_argument('path', type=str, help='Path to the directory containing JSONL files')
     parser.add_argument('output', type=str, help='Output file name')
     args = parser.parse_args()
-    
+    times = get_year_unix_times(2018)
     accel = 1.7
-    start_time = 1514764800000  # Replace with the desired start time
-    end_time = 1546300800  # Replace with the desired end time
-    
+    start_time = times[0]  # Replace with the desired start time
+    end_time = times[1]  # Replace with the desired end time
     full_preprocess(args.path, args.output, accel, start_time, end_time)
 
 if __name__ == '__main__':

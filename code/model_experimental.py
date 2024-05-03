@@ -91,7 +91,7 @@ class Recurrent(tf.keras.Model):
         # print(f"Shape of rnn_output: {rnn_output.shape}")
 
         context = self.dropout(rnn_output, training=training)
-        print(f"Shape of context: {context.shape}")
+        #print(f"Shape of context: {context.shape}")
 
         # Time distribution parameters
         time_params = self.hypernet_time(context)
@@ -137,4 +137,6 @@ class Recurrent(tf.keras.Model):
             intervals[:, -1, :] #index into one after the last distribution, since we have num_distributions+1 time intervals
         )
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
-        return -log_likelihood/(end_time-start_time) # NORMALIZE THIS TODO TODO TODO 
+        # Normalize the loss
+        log_likelihood = -log_likelihood / len_sequence
+        return log_likelihood

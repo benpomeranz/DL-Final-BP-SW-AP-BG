@@ -72,3 +72,40 @@ def plot_loss(training_losses):
     plt.legend()
     plt.grid(True)
     plt.show()
+
+def plot_distributions(distributions, num_points=100, x_range=(-10, 10), plots_per_figure=20):
+    x_values = np.linspace(x_range[0], x_range[1], num_points)
+    batch_size, seq_length = distributions.batch_shape
+    
+    # Calculate total number of plots and number of figures needed
+    total_plots = batch_size * seq_length
+    num_figures = (total_plots + plots_per_figure - 1) // plots_per_figure  # Ceiling division
+    
+    plot_index = 0  # This keeps track of the overall plot index
+    for fig_index in range(num_figures):
+        fig, axes = plt.subplots(min(plots_per_figure, total_plots - plot_index), 1, figsize=(6, 4 * min(plots_per_figure, total_plots - plot_index)))
+        if plots_per_figure == 1:
+            axes = [axes]  # Make sure axes is iterable
+        
+        for ax in axes:
+            if plot_index >= total_plots:
+                break
+            # Determine batch and sequence index
+            batch_idx = plot_index // seq_length
+            seq_idx = plot_index % seq_length
+            
+            # Evaluate PDF and plot
+            pdf_values = distributions[batch_idx, seq_idx].prob(x_values)
+            ax.plot(x_values, pdf_values)
+            ax.set_title(f'Batch {batch_idx}, Sequence {seq_idx}')
+            ax.set_xlabel('x')
+            ax.set_ylabel('PDF')
+            ax.grid(True)
+            
+            plot_index += 1
+        
+        plt.tight_layout()
+        plt.show()
+
+        if fig_index < num_figures - 1:
+            plt.figure()
