@@ -74,6 +74,16 @@ def main():
 
     visuaization.plot_loss(training_losses, training=True)
     visuaization.plot_loss(validation_losses, training=False)
+
+    # Now we test our model on the test data
+    for filename in os.listdir('data/testing'):
+        file_path = os.path.join('data/testing', filename)
+        if os.path.isfile(file_path):
+            times, magnitudes, accels = visuaization.jsonl_to_data(file_path, start_time, end_time)
+            losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
+            test_losses.append(losses)
+
+    visuaization.plot_loss(test_losses, training=False)
     
     # #testing output: train on one device then run this on anohter
     # times, magnitudes, accels = jsonl_to_data('big_data/device023_preprocessed', start_time, end_time)
