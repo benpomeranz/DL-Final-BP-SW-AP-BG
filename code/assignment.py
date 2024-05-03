@@ -30,10 +30,9 @@ def train(model, times, magnitudes, accels, sequence_length, has_accel):
 
 def main():
     times, magnitudes, accels = jsonl_to_data('processed_2018_2', 1514782800, 1546318800)
-    print(len(magnitudes))
-    # model = Recurrent()
-    # for i in range(6):
-    #     print(f"Epoch {i}")
-    #     # train(model, times, magnitudes, accels, len(magnitudes), has_accel)
+    model = Recurrent()
+    for i in range(6):
+        print(f"Epoch {i}")
+        # train(model, times, magnitudes, accels, len(magnitudes), has_accel)
 
 main()
