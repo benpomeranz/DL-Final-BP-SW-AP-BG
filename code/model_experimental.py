@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 from keras import Sequential
-from keras.layers import Dense, Flatten, Reshape, Concatenate
+#from keras_layers import Dense, Flatten, Reshape, Concatenate
 from math import exp, sqrt
 import numpy as np
 
@@ -140,4 +140,4 @@ class Recurrent(tf.keras.Model):
             intervals[:, -1, :] #index into one after the last distribution, since we have num_distributions+1 time intervals
         )
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
-        return -log_likelihood/(end_time-start_time) # NORMALIZE THIS TODO TODO TODO 
+        return -log_likelihood/(end_time-start_time) * 86400# NORMALIZE THIS TODO TODO TODO 

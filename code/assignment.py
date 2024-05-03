@@ -33,7 +33,7 @@ def main():
     start_time = 1514782800
     end_time = 1546318800
 
-    times, magnitudes, accels = jsonl_to_data('processed_2018_2', start_time, end_time)
+    times, magnitudes, accels = jsonl_to_data('big_data/device004_preprocessed', start_time, end_time)
     model = Recurrent()
     for i in range(6):
         print(f"Epoch {i}")
