@@ -38,7 +38,7 @@ def jsonl_to_data(filename, start_time, end_time):
     line0 = lines[0]
     json_data = json.loads(line0)
     # Append time, richter, and acceleration
-    t = math.log(json_data['cloud_t']-start_time)
+    t = json_data['cloud_t']-start_time
     times.append(t)
     richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
     richters.append(richter)
@@ -52,20 +52,18 @@ def jsonl_to_data(filename, start_time, end_time):
         json_data_2 = json.loads(line2)
         json_data_1= json.loads(line1)
         # Append time, richter, and acceleration
-        t = math.log(json_data_2['cloud_t']-json_data_1['cloud_t'])
+        t = json_data_2['cloud_t']-json_data_1['cloud_t']
         times.append(t)
         richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
         richters.append(richter)
         accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
         accels.append(accel_matrix.flatten())
-    times.append(math.log(end_time - json_data_2['cloud_t']))
+    times.append(end_time - json_data_2['cloud_t'])
 
     # Get average values after, and subtract them from relevant values
-    log_avg_interval = math.log(sum(times) / len(times))
     richter_avg = np.average(richters)
     average_accel = np.mean(accels)
 
-    times = [t - log_avg_interval for t in times]
     richters = [r - richter_avg for r in richters]
     accels = [a - average_accel for a in accels]
 
