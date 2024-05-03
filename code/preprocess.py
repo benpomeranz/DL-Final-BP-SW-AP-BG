@@ -2,6 +2,7 @@ import json
 import numpy as np
 import os
 import math
+import argparse
 
 
 #SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS: take in a single accelaration value, 
@@ -24,66 +25,53 @@ def accel_to_rich_one(accel):
 #and third row the z, and where we are subtracting the average of all accelaration values
 #  data[0] = log(t_i-t_{i-1})-(log_avg interval time)
 def jsonl_to_data(filename, start_time, end_time):
-    data = []
-    time_intervals = []
-    total_accels = []
+    times = []
     richters = []
+    accels = []
 
     with open(f"{filename}.jsonl", 'r') as file:
         lines = file.readlines()
 
-    for i in range(1, len(lines)):
-        line2 = lines[i]
-        line1 = lines[i - 1]
-        # Process the pair of lines
-        json_data_2 = json.loads(line2)
-        json_data_1= json.loads(line1)
-        inter_time = json_data_2['cloud_t']-json_data_1['cloud_t']
-        time_intervals.append(inter_time)
-        total_accels.append(np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']]))
-        richters.append(accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max()))
-    log_avg_interval = math.log(sum(time_intervals) / len(time_intervals))
-    average_accel = np.mean(total_accels)
-
-    
-    #Append first datapoint:
+    # Process first line
     line0 = lines[0]
     json_data = json.loads(line0)
-    t = math.log(json_data['cloud_t']-start_time) - log_avg_interval
+    # Append time, richter, and acceleration
+    t = math.log(json_data['cloud_t']-start_time)
+    times.append(t)
     richter = accel_to_rich_one(np.array(json_data["total_acceleration"]).max())
-    accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
     richters.append(richter)
-    richter_avg = np.average(richters)
+    accel_matrix = np.array([json_data['x'], json_data['y'], json_data['z']])
+    accels.append(accel_matrix.flatten())
 
-    times = []
-    richters = []
-    accels = []
-    times.append(t-start_time)
-    richters.append(richter-richter_avg)
-    accels.append(accel_matrix - average_accel)
-    # data.append([t-start_time, richter-richter_avg, accel_matrix - average_accel])
-
-    #For rest iterate through getting interval times
+    # Process the rest of the lines in pairs
     for i in range(1, len(lines)):
         line2 = lines[i]
         line1 = lines[i - 1]
         json_data_2 = json.loads(line2)
         json_data_1= json.loads(line1)
-        t = math.log(json_data_2['cloud_t']-json_data_1['cloud_t']) - log_avg_interval
-        # print(np.array(json_data_2["total_acceleration"]).max())
-        richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
-        accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
-
+        # Append time, richter, and acceleration
+        t = math.log(json_data_2['cloud_t']-json_data_1['cloud_t'])
         times.append(t)
-        richters.append(richter-richter_avg)
-        accels.append(accel_matrix - average_accel)
-        # data.append([t, richter-richter_avg, accel_matrix - average_accel])
-    # return data
+        richter = accel_to_rich_one(np.array(json_data_2["total_acceleration"]).max())
+        richters.append(richter)
+        accel_matrix = np.array([json_data_2['x'], json_data_2['y'], json_data_2['z']])
+        accels.append(accel_matrix.flatten())
+    times.append(math.log(end_time - json_data_2['cloud_t']))
+
+    # Get average values after, and subtract them from relevant values
+    log_avg_interval = math.log(sum(times) / len(times))
+    richter_avg = np.average(richters)
+    average_accel = np.mean(accels)
+
+    times = [t - log_avg_interval for t in times]
+    richters = [r - richter_avg for r in richters]
+    accels = [a - average_accel for a in accels]
+
     return times, richters, accels
 
 #takes in a JSONL filename WIHTOUT suffix, sorts by "cloud_t" value
 def sort_by_time(filename):
-    with open(f"{filename}.jsonl", 'r') as file:
+    with open(f"{filename}.jsonl", 'r+') as file:
         lines = file.readlines()
     sorted_lines = sorted(lines, key=lambda line: json.loads(line)['cloud_t'])
     with open(f"{filename}.jsonl", 'w') as file:
@@ -91,7 +79,7 @@ def sort_by_time(filename):
 
 #filepath does not include suffix, MODIFIES THE FILE
 def delete_within_x(filepath:str, num_secs:int):
-    with open(f"{filepath}.jsonl", 'r') as file:
+    with open(f"{filepath}.jsonl", 'r+') as file:
         lines = file.readlines()
     # Process each line
     prev_time = float('-inf')
@@ -130,20 +118,30 @@ def add_total_and_select(path:str, output:str, accel:float):
                     data['total_acceleration'] = total_acceleration
                     # Check if 'total_acceleration' contains a value greater than 5
                     if any(x > accel for x in data['total_acceleration']):
-                        # Add the total acceleration array to the JSON object
-                        data['total_acceleration'] = data['total_acceleration']
                         # Write the updated JSON object back to the file
                         line = json.dumps(data)
                         # Write the line to a new JSONL file in the root directory
                         with open(f"{output}.jsonl", 'a') as output_file:
                             output_file.write(f"{line}\n")
 
-
-
+# Takes in a path and preprocesses the data, returns the data
+# IMPORTANT: the return format of this function is 3 lists
 def full_preprocess(path:str, output:str, accel:float, start_time: int, end_time: int):
     add_total_and_select(path, output, accel)
     sort_by_time(output)
     delete_within_x(output, 100)
-    return jsonl_to_data(output, start_time, end_time)
 
-print(jsonl_to_data('processed_2018_2'))
+def main():
+    parser = argparse.ArgumentParser(description='Preprocess data')
+    parser.add_argument('path', type=str, help='Path to the directory containing JSONL files')
+    parser.add_argument('output', type=str, help='Output file name')
+    args = parser.parse_args()
+    
+    accel = 1.7
+    start_time = 1514764800000  # Replace with the desired start time
+    end_time = 1546300800  # Replace with the desired end time
+    
+    full_preprocess(args.path, args.output, accel, start_time, end_time)
+
+if __name__ == '__main__':
+    main()

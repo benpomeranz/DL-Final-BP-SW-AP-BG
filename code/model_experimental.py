@@ -1,7 +1,9 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 from keras import Sequential
 from keras.layers import Dense, Flatten, Reshape, Concatenate
-from math import exp, sqrt, square
+from math import exp, sqrt
+import numpy as np
 
 class Recurrent(tf.keras.Model):
 
@@ -71,7 +73,7 @@ class Recurrent(tf.keras.Model):
         self.dropout = tf.keras.layers.Dropout(dropout_proba)
 
     # call function
-    def call(self, features, has_accel=True, training=False):
+    def call(self, times, magnitudes, accelaration=None, has_accel=True, training=False):
         '''
             inputs: 
                 magnitudes: array containing the magnitudes of events
@@ -81,7 +83,7 @@ class Recurrent(tf.keras.Model):
         '''
 
         # concatenate all features
-        features = np.array(features)
+        features = tf.concat((times[:, :-1, :], magnitudes, accelaration), axis=-1)
 
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
@@ -114,17 +116,28 @@ class Recurrent(tf.keras.Model):
     
         #THIS NEEDS TO BE MODIFIED TO ALSO HAVE SURVIVAL PROBABILITY OF LAST EVENT UNTIL END OF TIME PERIOD
 
-    def loss(self, distributions, intervals):
+    def loss_function(self, distributions, intervals, start_time, end_time):
         '''
         Compute the negative log likelihood loss.
 
         Args:
             distributions: A batch of sequences of TensorFlow distributions.
-            intervals: Shape (B, S) interval[]
+            intervals: Shape (B, S, 1) interval[]
 
         Returns:
             The negative log likelihood loss.
         '''
-        log_like = distributions.log_prob(intervals.clamp_min(1e-10))
-        neg_log_likelihood = -tf.reduce_sum(log_probs)
-        return neg_log_likelihood
+        #print(f"Shape of intervals: {intervals.shape}")
+        #print(f"SHAPE OF CAST MAXED INTERVALS: {tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32).shape}")
+        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32), axis=-1)) #(B, S,)
+        #print(f"Shape of log_like: {log_like.shape}")
+        log_likelihood = tf.reduce_sum(log_like, -1)
+
+        arange = tf.range(log_like.shape[0])
+        len_sequence = log_like.shape[1]
+        #print("ARANGE AND LEN SEQUENCE", arange, len_sequence)
+        log_surv = distributions.log_survival_function(
+            intervals[:, -1, :] #index into one after the last distribution, since we have num_distributions+1 time intervals
+        )
+        log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
+        return -log_likelihood/(end_time-start_time) # NORMALIZE THIS TODO TODO TODO 
