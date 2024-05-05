@@ -4,7 +4,7 @@ from model_experimental import Recurrent
 import matplotlib.pyplot as plt
 import matplotlib
 import math
-from visuaization import save_distributions_images
+from code.visualization import save_distributions_images
 from preprocess import full_preprocess
 matplotlib.use('TkAgg')
 

@@ -10,7 +10,7 @@ from tqdm import tqdm
 import preprocess 
 from preprocess import jsonl_to_data
 from model_experimental import Recurrent
-import visuaization
+import code.visualization as visualization
 
 # from model import TPPModel
 # nll takes in list of distributions, input to call
@@ -60,34 +60,44 @@ def main():
             for filename in os.listdir('data/training'):
                 file_path = os.path.join('data/training', filename)
                 if os.path.isfile(file_path):
-                    times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
-                    losses, train_pred = train(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=False)
+                    times, magnitudes, accels = visualization.jsonl_to_data(file_path, start_time, end_time)
+                    losses, train_pred = train(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
                     epoch_training_losses.append(losses)
             training_losses.append(tf.math.reduce_mean(epoch_training_losses))
             # We now loop through all of our validation data
             for filename in os.listdir('data/validation'):
                 file_path = os.path.join('data/validation', filename)
                 if os.path.isfile(file_path):
-                    times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
-                    losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=False)
+                    times, magnitudes, accels = visualization.jsonl_to_data(file_path, start_time, end_time)
+                    losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
                     epoch_validation_losses.append(losses)
             validation_losses.append(tf.math.reduce_mean(epoch_validation_losses))
             print(f"Epoch {i}, Training Loss: {training_losses[-1]}, Validation Loss: {validation_losses[-1]}")
 
-    #visuaization.plot_weibull_mixture(train_pred)
-    visuaization.plot_loss(training_losses)
-    visuaization.plot_loss(validation_losses, "Validation")
+    visualization.plot_loss(training_losses, training=True)
+    visualization.plot_loss(validation_losses, training=False)
 
     # Now we test our model on the test data
     for filename in os.listdir('data/testing'):
         file_path = os.path.join('data/testing', filename)
         if os.path.isfile(file_path):
-            times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
-            losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=False)
-            test_losses.append(tf.math.reduce_mean(losses))
-            print(f"Test Loss: {test_losses[-1]}")
+            times, magnitudes, accels = visualization.jsonl_to_data(file_path, start_time, end_time)
+            losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
+            test_losses.append(losses)
 
-    visuaization.plot_loss(test_losses, "Testing")
+    visualization.plot_loss(test_losses, training=False)
+    
+    # #testing output: train on one device then run this on anohter
+    # times, magnitudes, accels = jsonl_to_data('big_data/device023_preprocessed', start_time, end_time)
+    # times = np.expand_dims(np.array(times).T, axis=[0,2])
+    # magnitudes = np.expand_dims(np.array(magnitudes).T, axis=[0,2])
+    # accels = np.expand_dims(np.array(accels), axis=[0])
+    # print("=================TESTING OUTPUT====================")
+    # dist = model(times, magnitudes, accels, has_accel=True, training=False)
+
+    # print("=================TESTING LOSS====================")
+    # test_loss = model.loss_function(dist, times[:, 1:, :], start_time, end_time)
+    # print(f"test_loss: {test_loss}")
 
 
 if __name__ == "__main__":
