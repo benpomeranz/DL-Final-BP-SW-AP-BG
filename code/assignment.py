@@ -62,16 +62,16 @@ def main():
             for filename in os.listdir('data/training'):
                 file_path = os.path.join('data/training', filename)
                 if os.path.isfile(file_path):
-                    times, magnitudes, accels = visualization.jsonl_to_data(file_path, start_time, end_time)
-                    losses, train_pred = train(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
+                    times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
+                    losses, train_pred = train(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)
                     epoch_training_losses.append(losses)
             training_losses.append(tf.math.reduce_mean(epoch_training_losses))
             # We now loop through all of our validation data
             for filename in os.listdir('data/validation'):
                 file_path = os.path.join('data/validation', filename)
                 if os.path.isfile(file_path):
-                    times, magnitudes, accels = visualization.jsonl_to_data(file_path, start_time, end_time)
-                    losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)[1]
+                    times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
+                    losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)
                     epoch_validation_losses.append(losses)
             validation_losses.append(tf.math.reduce_mean(epoch_validation_losses))
             print(f"Epoch {epoch}, Training Loss: {training_losses[-1]}, Validation Loss: {validation_losses[-1]}")
