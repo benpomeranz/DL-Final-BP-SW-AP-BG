@@ -5,6 +5,8 @@ import math
 import argparse
 import time
 import datetime
+import shutil
+from random import shuffle
 
 #SEE THAT THIS HAS BEEN CHANGED FROM THE ONE IN PREPROCESS: take in a single accelaration value, 
 # get a single richter value
@@ -147,6 +149,39 @@ def get_year_unix_times(year:int) -> tuple:
     end_unix = int(time.mktime(end_time.timetuple()))
 
     return (start_unix, end_unix+1)
+
+def shuffle_files(base_dir):
+    # Paths to the subfolders
+    training_path = os.path.join(base_dir, 'training')
+    testing_path = os.path.join(base_dir, 'testing')
+    validation_path = os.path.join(base_dir, 'validation')
+
+    # Gather all files and their current paths
+    all_files = []
+    for path in [training_path, testing_path, validation_path]:
+        for file in os.listdir(path):
+            full_path = os.path.join(path, file)
+            all_files.append((full_path, path))
+    
+    # Shuffle the list of all files
+    shuffle(all_files)
+
+    # Calculate how many files to place back into each folder
+    num_train = len(os.listdir(training_path))
+    num_test = len(os.listdir(testing_path))
+    num_val = len(os.listdir(validation_path))
+
+    # Function to redistribute files
+    def redistribute_files(files, folder, count):
+        for i in range(count):
+            file_path, _ = files.pop(0)
+            new_path = os.path.join(folder, os.path.basename(file_path))
+            shutil.move(file_path, new_path)
+    
+    # Redistribute the files back into the original folders
+    redistribute_files(all_files, training_path, num_train)
+    redistribute_files(all_files, testing_path, num_test)
+    redistribute_files(all_files, validation_path, num_val)
 
 def main():
     parser = argparse.ArgumentParser(description='Preprocess data')

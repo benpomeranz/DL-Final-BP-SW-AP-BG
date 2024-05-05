@@ -133,7 +133,7 @@ class Recurrent(tf.keras.Model):
             The negative log likelihood loss.
         '''
        
-        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-10), dtype=tf.float32), axis=-1)) #(B, S,)
+        log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-15), dtype=tf.float32), axis=-1)) #(B, S,)
         log_likelihood = tf.reduce_sum(log_like, -1) # (B,)
         
         surv = distributions.survival_function(
@@ -145,8 +145,8 @@ class Recurrent(tf.keras.Model):
         except Exception as e:
             print("surv:", surv)
             print("distributions:", distributions)
-            print(tf.cast(tf.maximum(intervals[:, -1, :], 1e-10), dtype=tf.float32))
-        log_surv = tf.math.log(tf.maximum(surv, 1e-10) + 1e-10)
+            print(tf.cast(tf.maximum(intervals[:, -1, :], 1e-15), dtype=tf.float32))
+        log_surv = tf.math.log(tf.maximum(surv, 1e-15) + 1e-10)
         try:
             tf.debugging.check_numerics(log_surv, "Tensor has NaN values")
         except Exception as e:

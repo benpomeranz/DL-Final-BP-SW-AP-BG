@@ -67,7 +67,7 @@ def save_distributions_images(distributions, time_range, output_dir):
 def plot_loss(losses, type: str = "Training"):
     plt.figure(figsize=(8, 6))
     plt.plot(losses, label=f'{type} Loss')
-    plt.title('Loss During Training')
+    plt.title(f'Loss During {type}')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
