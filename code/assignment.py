@@ -45,7 +45,7 @@ def validate(model, times, magnitudes, accels, start_time, end_time, sequence_le
 
 def main():
     start_time, end_time = preprocess.get_year_unix_times(2018)
-    epochs = 1
+    epochs = 15
     model = Recurrent()
     training_losses = []
     validation_losses = []
@@ -89,6 +89,6 @@ def main():
             test_losses.append(tf.math.reduce_mean(losses))
     print(f"Test Loss: {tf.math.reduce_mean(test_losses)}")
 
-
 if __name__ == "__main__":
     main()
+    plt.show()

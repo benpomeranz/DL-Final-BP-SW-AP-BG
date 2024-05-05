@@ -108,7 +108,7 @@ def plot_weibull_mixture(mixture_dist, num_points=32, x_range=(0, 3)):
     plt.ylabel('Probability Density')
     plt.legend()
     plt.grid(True)
-    plt.show()
+    plt.show(block=False)
 
 def plot_basic(output):
     fig, axs = plt.subplots(1, 1, figsize=(8, 6))
@@ -119,5 +119,5 @@ def plot_basic(output):
     axs.plot(x, y)
     axs.set_title("Distribution 1")
     plt.tight_layout()
-    plt.show()
+    plt.show(block=False)
 
