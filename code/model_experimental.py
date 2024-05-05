@@ -92,7 +92,7 @@ class Recurrent(tf.keras.Model):
         # pass features into RNN
         rnn_output = self.rnn(features, training=training)
         ## SHAPE OF OUTPUT (BATCH_SIZE, SEQUENCE_LENGTH, 32)
-        # print(f"Shape of rnn_output: {rnn_output.shape}")
+        # print(f"rnn_output: {rnn_output}")
 
         context = self.dropout(rnn_output, training=training)
         # Time distribution parameters
@@ -116,9 +116,9 @@ class Recurrent(tf.keras.Model):
             )
 
     def encode_time(self, inter_times):
-        log_t = tf.math.log(inter_times + 1e-10)
+        log_t = tf.math.log(tf.maximum(inter_times, 1e-10))
         encoded_time = log_t - tf.reduce_mean(log_t, axis=1)
-        #print("ENCODED SHAPE----------------",encoded_time.shape)
+        # print("ENCODED SHAPE----------------",encoded_time.shape)
         return encoded_time
 
     def loss_function(self, distributions, intervals, start_time, end_time):
@@ -153,5 +153,6 @@ class Recurrent(tf.keras.Model):
             print("log_surv:", log_surv)
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
 
-        #print(f"log_likelihood: {log_likelihood}")
-        return -log_likelihood/(end_time-start_time) # NORMALIZing THIS by number of DAYS TODO TODO TODO 
+        print(f"log_likelihood: {log_likelihood}")
+        print(f"loss: {-log_likelihood/(len_sequence)}")
+        return -log_likelihood/(len_sequence) # NORMALIZing THIS by number of DAYS TODO TODO TODO 

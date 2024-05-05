@@ -18,7 +18,7 @@ def train(model, times, magnitudes, accels, start_time, end_time, sequence_lengt
     # magnitudes: [batchsize(1) x sequence size x 1]
     # times: [batchsize(1) x sequence size + 1 x 1]
     # accels: [batchsize(1) x sequence size x 96]
-    model.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
+    model.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0005)
     losses = []
     times = np.expand_dims(np.array(times).T, axis=[0,2])
     magnitudes = np.expand_dims(np.array(magnitudes).T, axis=[0,2])
@@ -27,7 +27,7 @@ def train(model, times, magnitudes, accels, start_time, end_time, sequence_lengt
         pred = model(times, magnitudes, accels, has_accel=has_accel, training=True)
         loss = model.loss_function(pred, times[:, 1:, :], start_time, end_time)
         #print(f"Model Trainable Variables: {model.trainable_variables}")
-        #visuaization.save_distributions_images(pred, (start_time, end_time, 100), "output")
+        # visuaization.save_distributions_images(pred, (start_time, end_time, 100), "output")
         losses.append(loss)
     grads = tape.gradient(loss, model.trainable_variables)
     model.optimizer.apply_gradients(zip(grads, model.trainable_variables))
