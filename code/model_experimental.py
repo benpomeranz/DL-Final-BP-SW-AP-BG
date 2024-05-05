@@ -135,7 +135,7 @@ class Recurrent(tf.keras.Model):
        
         log_like = distributions.log_prob(tf.squeeze(tf.cast(tf.maximum(intervals, 1e-15), dtype=tf.float32), axis=-1)) #(B, S,)
         log_likelihood = tf.reduce_sum(log_like, -1) # (B,)
-        
+        len_sequence = tf.cast(tf.shape(intervals)[1], dtype=tf.float32)
         surv = distributions.survival_function(
             tf.cast(tf.maximum(intervals[:, -1, :], 1e-9), dtype=tf.float32) #index into one after the last distribution, since we have num_distributions+1 time intervals
         )[:, -1]
@@ -153,6 +153,6 @@ class Recurrent(tf.keras.Model):
             print("log_surv:", log_surv)
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
 
-        print(f"log_likelihood: {log_likelihood}")
-        print(f"loss: {-log_likelihood/(len_sequence)}")
+        # print(f"log_likelihood: {log_likelihood}")
+        # print(f"loss: {-log_likelihood/(len_sequence)}")
         return -log_likelihood/(len_sequence) # NORMALIZing THIS by number of DAYS TODO TODO TODO 
