@@ -72,7 +72,7 @@ def plot_loss(losses, type: str = "Training"):
     plt.ylabel('Loss')
     plt.legend()
     plt.grid(True)
-    plt.show()
+    plt.show(block=False)
 
 
 def plot_weibull_mixture(mixture_dist, num_points=32, x_range=(0, 3)):
@@ -110,14 +110,14 @@ def plot_weibull_mixture(mixture_dist, num_points=32, x_range=(0, 3)):
     plt.grid(True)
     plt.show(block=False)
 
-def plot_basic(output):
+def plot_basic(output, title):
     fig, axs = plt.subplots(1, 1, figsize=(8, 6))
-    dist = output[0]  # Select the first distribution in output
-    x = np.arange(0, 1, 100)  # Generate a list of numbers between -1 and 1
-    y = [dist.prob(i) for i in x]  # Reshape the input tensor to match the shape of the output tensor
-    print(x, y)
-    axs.plot(x, y)
-    axs.set_title("Distribution 1")
+    for dist in output:  # Loop through each distribution in the output list
+        dist = dist[0, 0]
+        x = np.linspace(0, 200, 100)  # Generate a list of numbers between 0 and 1
+        y = [dist.prob(i) for i in x]  # Calculate the probability for each value in x
+        axs.plot(x, y)
+    axs.set_title(title)
     plt.tight_layout()
     plt.show(block=False)
 
