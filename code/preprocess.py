@@ -150,7 +150,12 @@ def get_year_unix_times(year:int) -> tuple:
 
     return (start_unix, end_unix+1)
 
-def shuffle_files(base_dir):
+def shuffle_files(base_dir) -> None:
+    '''
+    This function shuffles the files in the training, testing, and validation folders
+
+    args: base_dir: The base directory containing the training, testing, and validation folders
+    '''
     # Paths to the subfolders
     training_path = os.path.join(base_dir, 'training')
     testing_path = os.path.join(base_dir, 'testing')
@@ -188,10 +193,8 @@ def main():
     parser.add_argument('path', type=str, help='Path to the directory containing JSONL files')
     parser.add_argument('output', type=str, help='Output file name')
     args = parser.parse_args()
-    times = get_year_unix_times(2018)
+    start_time, end_time = get_year_unix_times(2018)
     accel = 1.7
-    start_time = times[0]  # Replace with the desired start time
-    end_time = times[1]  # Replace with the desired end time
     full_preprocess(args.path, args.output, accel, start_time, end_time)
 
 if __name__ == '__main__':

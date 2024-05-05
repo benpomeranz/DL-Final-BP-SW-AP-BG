@@ -26,8 +26,6 @@ def train(model, times, magnitudes, accels, start_time, end_time, sequence_lengt
     with tf.GradientTape() as tape:
         pred = model(times, magnitudes, accels, has_accel=has_accel, training=True)
         loss = model.loss_function(pred, times[:, 1:, :], start_time, end_time)
-        #print(f"Model Trainable Variables: {model.trainable_variables}")
-        # visuaization.save_distributions_images(pred, (start_time, end_time, 100), "output")
         losses.append(loss)
     grads = tape.gradient(loss, model.trainable_variables)
     model.optimizer.apply_gradients(zip(grads, model.trainable_variables))
@@ -45,7 +43,7 @@ def validate(model, times, magnitudes, accels, start_time, end_time, sequence_le
 
 def main():
     start_time, end_time = preprocess.get_year_unix_times(2018)
-    epochs = 1
+    epochs = 10
     model = Recurrent()
     training_losses = []
     validation_losses = []
@@ -76,7 +74,6 @@ def main():
             validation_losses.append(tf.math.reduce_mean(epoch_validation_losses))
             print(f"Epoch {epoch}, Training Loss: {training_losses[-1]}, Validation Loss: {validation_losses[-1]}")
 
-    #visuaization.plot_weibull_mixture(train_pred)
     visualization.plot_loss(training_losses)
     visualization.plot_loss(validation_losses, "Validation")
 
@@ -85,7 +82,7 @@ def main():
         file_path = os.path.join('data/testing', filename)
         if os.path.isfile(file_path):
             times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
-            losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=False)
+            losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)
             test_losses.append(tf.math.reduce_mean(losses))
     print(f"Test Loss: {tf.math.reduce_mean(test_losses)}")
 

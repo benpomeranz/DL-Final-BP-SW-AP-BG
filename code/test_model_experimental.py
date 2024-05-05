@@ -71,10 +71,8 @@ def test_train_model():
 
     return loss
 
-# basic_test()
 test_loss()
-# full_preprocess("code/big_data/device002/month=03/day=21/hour=18/45.jsonl", "test_output", 1.7, 0, 11000)
-# print(test_train_model())
+
 
 # Check the shape of the output
 # expected_shape = (10, 20)  # Replace with the expected shape of your output
