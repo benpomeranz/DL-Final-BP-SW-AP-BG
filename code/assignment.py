@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 import tensorflow as tf
+import tensorflow_probability as tfp
 # from data import Dataset
 from tqdm import tqdm
 import preprocess 
@@ -18,7 +19,7 @@ def train(model, times, magnitudes, accels, start_time, end_time, sequence_lengt
     # magnitudes: [batchsize(1) x sequence size x 1]
     # times: [batchsize(1) x sequence size + 1 x 1]
     # accels: [batchsize(1) x sequence size x 96]
-    model.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0005)
+    model.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     losses = []
     times = np.expand_dims(np.array(times).T, axis=[0,2])
     magnitudes = np.expand_dims(np.array(magnitudes).T, axis=[0,2])
@@ -53,6 +54,7 @@ def main():
 
     # Here is some code to loop through all of our training data and then run it against our validation data
     if os.path.exists('data/training'):
+        val_dists_list = []
         # We now loop through all of our training data for the specified number of epochs
         for epoch in tqdm(range(epochs), "Training Progress"):
             epoch_training_losses = []
@@ -73,7 +75,8 @@ def main():
                     epoch_validation_losses.append(losses)
             validation_losses.append(tf.math.reduce_mean(epoch_validation_losses))
             print(f"Epoch {epoch}, Training Loss: {training_losses[-1]}, Validation Loss: {validation_losses[-1]}")
-
+            val_dists_list+=[valid_pred]
+    #visuaization.plot_weibull_mixture(train_pred)
     visualization.plot_loss(training_losses)
     visualization.plot_loss(validation_losses, "Validation")
 
@@ -85,7 +88,10 @@ def main():
             losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)
             test_losses.append(tf.math.reduce_mean(losses))
     print(f"Test Loss: {tf.math.reduce_mean(test_losses)}")
-
+    visualization.plot_basic(val_dists_list, "Distribution of one event over epochs")
+    
+    
 
 if __name__ == "__main__":
     main()
+    plt.show()
