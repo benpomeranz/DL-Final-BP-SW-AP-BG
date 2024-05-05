@@ -3,3 +3,6 @@ To do:
 2. See if distributions look meaningful at all
 3. Test accuracy in 95% confidence interval
 4. Create visuals for seqeuences/data
+6. BEN WILL DO THIS: Run 4 200 epochs, after last epoch create the following: 
+1. A plot of distributions given different data and 
+2. A plot of how the same distribution changes
