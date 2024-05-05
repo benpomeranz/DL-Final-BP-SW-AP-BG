@@ -116,7 +116,7 @@ class Recurrent(tf.keras.Model):
             )
 
     def encode_time(self, inter_times):
-        log_t = tf.math.log(tf.maximum(inter_times, 1e-10))
+        log_t = tf.math.log(tf.maximum(inter_times, 1e-15))
         encoded_time = log_t - tf.reduce_mean(log_t, axis=1)
         # print("ENCODED SHAPE----------------",encoded_time.shape)
         return encoded_time
@@ -137,7 +137,7 @@ class Recurrent(tf.keras.Model):
         log_likelihood = tf.reduce_sum(log_like, -1) # (B,)
         
         surv = distributions.survival_function(
-            tf.cast(tf.maximum(intervals[:, -1, :], 1e-9), dtype=tf.float32) #index into one after the last distribution, since we have num_distributions+1 time intervals
+            tf.cast(tf.maximum(intervals[:, -1, :], 1e-15), dtype=tf.float32) #index into one after the last distribution, since we have num_distributions+1 time intervals
         )[:, -1]
         try:
             tf.debugging.check_numerics(surv, "Tensor has NaN values")
@@ -152,7 +152,7 @@ class Recurrent(tf.keras.Model):
         except Exception as e:
             print("log_surv:", log_surv)
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
-
+        len_sequence = tf.cast(tf.shape(intervals)[1], dtype=tf.float32)
         print(f"log_likelihood: {log_likelihood}")
         print(f"loss: {-log_likelihood/(len_sequence)}")
         return -log_likelihood/(len_sequence) # NORMALIZing THIS by number of DAYS TODO TODO TODO 
