@@ -44,13 +44,13 @@ def validate(model, times, magnitudes, accels, start_time, end_time, sequence_le
 
 def main():
     start_time, end_time = preprocess.get_year_unix_times(2018)
-    epochs = 10
+    epochs = 150
     model = Recurrent()
     training_losses = []
     validation_losses = []
     test_losses = []
 
-    preprocess.shuffle_files('data')
+    # preprocess.shuffle_files('data')
 
     # Here is some code to loop through all of our training data and then run it against our validation data
     if os.path.exists('data/training'):
@@ -63,7 +63,7 @@ def main():
                 file_path = os.path.join('data/training', filename)
                 if os.path.isfile(file_path):
                     times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
-                    losses, train_pred = train(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)
+                    losses, train_pred = train(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=False)
                     epoch_training_losses.append(losses)
             training_losses.append(tf.math.reduce_mean(epoch_training_losses))
             # We now loop through all of our validation data
@@ -71,7 +71,7 @@ def main():
                 file_path = os.path.join('data/validation', filename)
                 if os.path.isfile(file_path):
                     times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
-                    losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)
+                    losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=False)
                     epoch_validation_losses.append(losses)
             validation_losses.append(tf.math.reduce_mean(epoch_validation_losses))
             print(f"Epoch {epoch}, Training Loss: {training_losses[-1]}, Validation Loss: {validation_losses[-1]}")
@@ -85,7 +85,7 @@ def main():
         file_path = os.path.join('data/testing', filename)
         if os.path.isfile(file_path):
             times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
-            losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)
+            losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=False)
             test_losses.append(tf.math.reduce_mean(losses))
     print(f"Test Loss: {tf.math.reduce_mean(test_losses)}")
     visualization.plot_basic(val_dists_list, "Distribution of one event over epochs")
