@@ -49,8 +49,8 @@ def main():
     training_losses = []
     validation_losses = []
     test_losses = []
-
-    # preprocess.shuffle_files('data')
+    acc_list = []
+    preprocess.shuffle_files('data')
 
     # Here is some code to loop through all of our training data and then run it against our validation data
     if os.path.exists('data/training'):
@@ -74,11 +74,14 @@ def main():
                     losses, valid_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=False)
                     epoch_validation_losses.append(losses)
             validation_losses.append(tf.math.reduce_mean(epoch_validation_losses))
-            print(f"Epoch {epoch}, Training Loss: {training_losses[-1]}, Validation Loss: {validation_losses[-1]}")
+            acc = accuracy(model, start_time, end_time)
+            acc_list.append(acc)
+            print(f"Epoch {epoch}, Training Loss: {training_losses[-1]}, Validation Loss: {validation_losses[-1]}, Accuracy: {acc}")
             val_dists_list+=[valid_pred]
     #visuaization.plot_weibull_mixture(train_pred)
     visualization.plot_loss(training_losses)
     visualization.plot_loss(validation_losses, "Validation")
+    visualization.plot_accuracy(acc_list)
 
     # Now we test our model on the test data
     for filename in os.listdir('data/testing'):
@@ -90,8 +93,32 @@ def main():
     print(f"Test Loss: {tf.math.reduce_mean(test_losses)}")
     visualization.plot_basic(val_dists_list, "Distribution of one event over epochs")
     
+
+def accuracy(model, start_time, end_time):
+    correct = 0
+    total=0
+    for filename in os.listdir('data/testing'):
+        file_path = os.path.join('data/testing', filename)
+        if os.path.isfile(file_path):
+            times, magnitudes, accels = preprocess.jsonl_to_data(file_path, start_time, end_time)
+            losses, test_pred = validate(model, times, magnitudes, accels, start_time, end_time, len(magnitudes), has_accel=True)
+            samples = test_pred.sample(1000)
+            samples = tf.transpose(samples, perm=[1, 2, 0]) #1 by sequence by 1000
+            # print("Samples shape: ", samples.shape)
+            # print("time shape: ", len(times))
+            quantiles = tfp.stats.percentile(samples, q=95, axis=-1)
+            # print("Quantiles shape: ", quantiles.shape)
+            for i, quantile in enumerate(quantiles[0]):
+                # print("QUANTILE", quantile)
+                if quantile>times[i+1]:
+                    correct+=1
+                total+=1
+    accuracy = correct/total
+    print("Accuracy", accuracy)
+    return accuracy
     
 
+    
 if __name__ == "__main__":
     main()
     plt.show()

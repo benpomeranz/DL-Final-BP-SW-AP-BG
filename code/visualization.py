@@ -74,6 +74,15 @@ def plot_loss(losses, type: str = "Training"):
     plt.grid(True)
     plt.show(block=False)
 
+def plot_accuracy(acc_list):
+    plt.figure(figsize=(8, 6))
+    plt.plot(acc_list, label='Accuracy')
+    plt.title('Accuracy During Training')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True)
+    plt.show(block=False)
 
 def plot_weibull_mixture(mixture_dist, num_points=32, x_range=(0, 3)):
     assert isinstance(mixture_dist, tfp.distributions.MixtureSameFamily), "Input is not a MixtureSameFamily distribution"

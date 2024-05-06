@@ -29,7 +29,7 @@ class Recurrent(tf.keras.Model):
                  #predict_magnitude: bool = False, # output distribution, NOT magnitude
                  hidden_size: int = 32, # hidden state size
                  num_components: int = 32, # WHAT SHOULD THIS BE ????? I THOUGHT 3 ???
-                 rnn_type: str = "GRU", # REMOVE??
+                 rnn_type: str = "LSTM", # REMOVE??
                  dropout_proba: float = 0.5,
                  tau_mean: float = 1.0, # mean inter-event times in data
                  mag_mean: float = 0.0, # mean earthquake magnitude in data
@@ -154,5 +154,5 @@ class Recurrent(tf.keras.Model):
         log_likelihood = log_likelihood + tf.reduce_sum(log_surv,-1)
         len_sequence = tf.cast(tf.shape(intervals)[1], dtype=tf.float32)
         # print(f"log_likelihood: {log_likelihood}")
-        #print(f"loss: {-log_likelihood/(len_sequence)}")
+        # print(f"loss: {-log_likelihood/(len_sequence)}")
         return -log_likelihood/(len_sequence) # NORMALIZing THIS by number of DAYS TODO TODO TODO 
